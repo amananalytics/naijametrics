@@ -4,9 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>NaijaMetrics — Nigeria Economic Intelligence</title>
-<meta name="description" content="Nigeria economic intelligence dashboard with live readings for FX, inflation, GDP, policy rate, reserves, and crude output." />
+<meta name="description" content="A clean public dashboard for Nigeria's current economic readings: FX, inflation, GDP, unemployment, policy rate, reserves, and crude output." />
 <meta property="og:title" content="NaijaMetrics — Nigeria Economic Intelligence" />
-<meta property="og:description" content="Nigeria economic readings, refreshed automatically from public sources." />
+<meta property="og:description" content="Live Nigerian economic readings, refreshed automatically from public sources." />
 <meta name="theme-color" content="#05080A" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,12 +17,12 @@
 <style>
 :root{
   --bg:#05080A;
-  --bg2:#091015;
+  --bg2:#091014;
   --panel:#0D1418;
   --panel2:#111A20;
-  --panel3:#15212A;
+  --panel3:#16222A;
   --text:#F4F8F6;
-  --muted:#718189;
+  --muted:#728188;
   --border:rgba(255,255,255,0.08);
   --border2:rgba(255,255,255,0.14);
   --accent:#00D46A;
@@ -43,7 +43,7 @@ html[data-theme="light"]{
   --panel2:#F8FBFC;
   --panel3:#EEF4F6;
   --text:#0B1114;
-  --muted:#62717A;
+  --muted:#63727A;
   --border:rgba(15,23,42,0.08);
   --border2:rgba(15,23,42,0.14);
   --accent:#0B8F4C;
@@ -59,21 +59,22 @@ html[data-theme="light"]{
 html{scroll-behavior:smooth}
 body{
   margin:0;
+  font-family:var(--body);
+  color:var(--text);
   background:
-    radial-gradient(1200px 700px at 18% -10%, rgba(0,212,106,.08), transparent 55%),
+    radial-gradient(1200px 680px at 15% -10%, rgba(0,212,106,.08), transparent 55%),
     radial-gradient(900px 600px at 100% 0%, rgba(56,189,248,.05), transparent 50%),
     linear-gradient(180deg,var(--bg),var(--bg2));
-  color:var(--text);
-  font-family:var(--body);
   overflow-x:hidden;
 }
 a{color:inherit;text-decoration:none}
 button{font:inherit}
 canvas{display:block;max-width:100%}
+img,svg{display:block;max-width:100%}
 
 @media (pointer:fine){
   body{cursor:none}
-  a,button,.pill,.tab,.theme-btn,.refresh-btn{cursor:none}
+  a,button,.tab,.theme-btn,.refresh-btn,.metric-btn,.chip{cursor:none}
 }
 
 #cursor,
@@ -87,12 +88,16 @@ canvas{display:block;max-width:100%}
   display:none;
 }
 #cursor{
-  width:9px;height:9px;border-radius:50%;
+  width:9px;
+  height:9px;
+  border-radius:50%;
   background:var(--accent);
   mix-blend-mode:exclusion;
 }
 #cursor-ring{
-  width:34px;height:34px;border-radius:50%;
+  width:34px;
+  height:34px;
+  border-radius:50%;
   border:1px solid rgba(0,212,106,.35);
   transition:width .16s ease,height .16s ease,border-color .16s ease;
 }
@@ -101,15 +106,15 @@ canvas{display:block;max-width:100%}
 }
 
 .shell{
-  width:min(1400px, calc(100% - 2rem));
+  width:min(1400px, calc(100% - 1.5rem));
   margin:0 auto;
-  padding:1rem 0 2.5rem;
+  padding:1rem 0 2.25rem;
 }
 
 .topbar{
   position:sticky;
   top:.75rem;
-  z-index:50;
+  z-index:60;
   display:flex;
   justify-content:space-between;
   align-items:center;
@@ -118,10 +123,9 @@ canvas{display:block;max-width:100%}
   border:1px solid var(--border);
   border-radius:22px;
   background:color-mix(in srgb, var(--panel) 86%, transparent);
-  backdrop-filter:blur(16px);
+  backdrop-filter:blur(18px);
   box-shadow:0 18px 55px rgba(0,0,0,.16);
 }
-
 .brand{
   display:flex;
   align-items:center;
@@ -148,7 +152,7 @@ canvas{display:block;max-width:100%}
 .nav{
   display:flex;
   align-items:center;
-  gap:.8rem;
+  gap:.75rem;
   flex-wrap:wrap;
   justify-content:flex-end;
 }
@@ -221,7 +225,9 @@ canvas{display:block;max-width:100%}
   position:absolute;
   right:-10%;
   bottom:-30%;
-  width:420px;height:420px;border-radius:50%;
+  width:420px;
+  height:420px;
+  border-radius:50%;
   background:radial-gradient(circle, rgba(0,212,106,.12), transparent 62%);
   pointer-events:none;
 }
@@ -250,11 +256,11 @@ canvas{display:block;max-width:100%}
   -webkit-text-stroke:1px var(--accent);
 }
 .hero p{
-  max-width:62ch;
-  margin:1.2rem 0 1.4rem;
+  max-width:64ch;
+  margin:1.15rem 0 1.4rem;
   color:var(--muted);
   line-height:1.85;
-  font-size:.92rem;
+  font-size:.93rem;
 }
 .hero-actions{
   display:flex;
@@ -262,7 +268,7 @@ canvas{display:block;max-width:100%}
   flex-wrap:wrap;
   margin-bottom:1.2rem;
 }
-.btn-primary,.btn-ghost,.pill,.tab,.metric-btn{
+.btn-primary,.btn-ghost,.pill,.tab,.metric-btn,.chip{
   border-radius:14px;
   transition:transform .18s ease, background .18s ease, border-color .18s ease, color .18s ease;
 }
@@ -285,7 +291,6 @@ canvas{display:block;max-width:100%}
   border-color:var(--accent);
   background:rgba(0,212,106,.04);
 }
-
 .hero-meta{
   display:flex;
   gap:.6rem;
@@ -298,6 +303,11 @@ canvas{display:block;max-width:100%}
   color:var(--muted);
   font-size:.67rem;
   letter-spacing:.06em;
+}
+.status-line{
+  margin-top:1rem;
+  font-size:.72rem;
+  color:var(--muted);
 }
 
 .hero-side{
@@ -368,7 +378,7 @@ canvas{display:block;max-width:100%}
   gap:1rem;
 }
 .stats{
-  grid-template-columns:repeat(6,minmax(0,1fr));
+  grid-template-columns:repeat(7,minmax(0,1fr));
   margin-top:1rem;
 }
 .stat{
@@ -378,7 +388,8 @@ canvas{display:block;max-width:100%}
 }
 .stat::before{
   content:'';
-  position:absolute;left:0;top:0;width:100%;height:2px;
+  position:absolute;
+  left:0;top:0;width:100%;height:2px;
   background:var(--accent);
   transform:scaleX(0);
   transform-origin:left;
@@ -429,12 +440,13 @@ canvas{display:block;max-width:100%}
 }
 .section-desc{
   margin:0;
-  max-width:52ch;
+  max-width:56ch;
   color:var(--muted);
   font-size:.84rem;
   line-height:1.75;
   text-align:right;
 }
+
 .controls{
   display:flex;
   justify-content:space-between;
@@ -472,6 +484,7 @@ canvas{display:block;max-width:100%}
   font-size:.72rem;
   line-height:1.5;
 }
+
 .chart-card{
   padding:1.15rem;
 }
@@ -506,7 +519,7 @@ canvas{display:block;max-width:100%}
   background:rgba(0,212,106,.08);
   white-space:nowrap;
 }
-.canvas-wrap{height:320px}
+.canvas-wrap{height:340px}
 canvas{width:100% !important;height:100% !important}
 .insight{
   margin-top:.9rem;
@@ -516,42 +529,7 @@ canvas{width:100% !important;height:100% !important}
 }
 .insight strong{color:var(--text)}
 
-.columns-2{
-  display:grid;
-  grid-template-columns:repeat(2,minmax(0,1fr));
-  gap:1rem;
-}
 .columns-3{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:1rem;
-}
-.table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:.8rem;
-}
-.table th,.table td{
-  border-bottom:1px solid var(--border);
-  text-align:left;
-  padding:.85rem .7rem;
-  font-size:.76rem;
-}
-.table th{
-  color:var(--muted);
-  font-size:.6rem;
-  text-transform:uppercase;
-  letter-spacing:.16em;
-}
-.table tr:hover td{background:color-mix(in srgb, var(--panel2) 84%, transparent)}
-.bar{
-  width:170px;height:6px;border-radius:999px;background:var(--border);overflow:hidden
-}
-.bar > span{
-  display:block;height:100%;border-radius:999px;background:var(--accent)
-}
-
-.methods{
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
   gap:1rem;
@@ -612,11 +590,6 @@ canvas{width:100% !important;height:100% !important}
   font-size:.72rem;
 }
 
-.loading{
-  font-size:.72rem;
-  color:var(--muted);
-}
-
 .reveal{
   opacity:0;
   transform:translateY(16px);
@@ -627,21 +600,20 @@ canvas{width:100% !important;height:100% !important}
   transform:none;
 }
 
-@media (max-width:1180px){
+@media (max-width:1220px){
   .hero{grid-template-columns:1fr}
   .hero-side{display:none}
-  .stats{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .columns-2,.columns-3,.methods,.footer-grid{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .columns-3,.footer-grid{grid-template-columns:1fr}
   .section-head{flex-direction:column}
   .section-desc{text-align:left;max-width:none}
 }
-@media (max-width:720px){
+@media (max-width:760px){
   .shell{width:min(100% - 1rem, 1400px)}
   .topbar,.hero-main,.section,.footer{padding:1rem}
   .nav{gap:.55rem}
   .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .canvas-wrap{height:260px}
-  .bar{width:120px}
+  .canvas-wrap{height:270px}
 }
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
@@ -678,20 +650,21 @@ canvas{width:100% !important;height:100% !important}
       <div class="kicker"><span class="line"></span> Nigeria economic readings · auto refresh</div>
       <h2>NIGERIA<br>BY THE<br><em>NUMBERS.</em></h2>
       <p>
-        A straightforward dashboard for people who just want the current picture:
-        exchange rate, inflation, policy rate, reserves, crude output, and GDP. It updates automatically and keeps the last reading on screen if a source is briefly unavailable.
+        A straightforward dashboard for a quick read on Nigeria’s macro picture.
+        It shows the latest public readings for the naira, inflation, policy rate, reserves, crude output, GDP, and unemployment.
+        The page refreshes automatically and keeps the last reading if a source is slow.
       </p>
       <div class="hero-actions">
         <a class="btn-primary" href="#snapshot">Open dashboard</a>
         <a class="btn-ghost" href="https://github.com/amananalytics" target="_blank" rel="noopener">View source ↗</a>
       </div>
       <div class="hero-meta">
-        <span class="pill">Public pages + APIs</span>
+        <span class="pill">Public data</span>
         <span class="pill">Dark / light mode</span>
         <span class="pill">Auto refresh</span>
-        <span class="pill">Snapshot cache</span>
+        <span class="pill">Cached fallback</span>
       </div>
-      <div class="loading" id="statusLine" style="margin-top:1rem">Loading current readings…</div>
+      <div class="status-line" id="statusLine">Loading current readings…</div>
     </div>
 
     <div class="hero-side reveal">
@@ -700,6 +673,7 @@ canvas{width:100% !important;height:100% !important}
           <div class="map-ring"></div>
           <div class="map-ring"></div>
           <div class="map-ring"></div>
+
           <svg class="map-svg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-label="Nigeria map">
             <defs>
               <linearGradient id="mg" x1="0" y1="0" x2="1" y2="1">
@@ -729,65 +703,72 @@ canvas{width:100% !important;height:100% !important}
 
       <div class="side-feed card">
         <div class="feed-row"><span>Last refresh</span><strong id="lastRefresh">—</strong></div>
-        <div class="feed-row"><span>Default view</span><strong id="viewText">Snapshot</strong></div>
         <div class="feed-row"><span>Mode</span><strong id="modeText">Dark</strong></div>
-        <div class="feed-row"><span>Source policy</span><strong>Public only</strong></div>
+        <div class="feed-row"><span>FX source</span><strong>Currency API</strong></div>
+        <div class="feed-row"><span>Macro source</span><strong>TE indicators</strong></div>
       </div>
     </div>
   </section>
 
   <section class="grid stats" id="snapshot">
-    <div class="stat card reveal" style="--accent:var(--warning)">
+    <div class="stat card reveal" data-metric="fx" style="--accent:var(--warning)">
       <div class="icon">💱</div>
       <div class="label">USD / NGN</div>
       <div class="value" id="kpiFx">—</div>
       <div class="sub" id="subFx">Fetching…</div>
     </div>
 
-    <div class="stat card reveal" style="--accent:var(--danger)">
+    <div class="stat card reveal" data-metric="inflation" style="--accent:var(--danger)">
       <div class="icon">📈</div>
       <div class="label">Inflation</div>
-      <div class="value" id="kpiInf">—</div>
-      <div class="sub" id="subInf">Fetching…</div>
+      <div class="value" id="kpiInflation">—</div>
+      <div class="sub" id="subInflation">Fetching…</div>
     </div>
 
-    <div class="stat card reveal" style="--accent:var(--accent)">
+    <div class="stat card reveal" data-metric="mpr" style="--accent:var(--accent)">
       <div class="icon">🏦</div>
       <div class="label">MPR</div>
       <div class="value" id="kpiMpr">—</div>
       <div class="sub" id="subMpr">Fetching…</div>
     </div>
 
-    <div class="stat card reveal" style="--accent:var(--info)">
+    <div class="stat card reveal" data-metric="reserves" style="--accent:var(--info)">
       <div class="icon">🛡️</div>
       <div class="label">Foreign reserves</div>
-      <div class="value" id="kpiRes">—</div>
-      <div class="sub" id="subRes">Fetching…</div>
+      <div class="value" id="kpiReserves">—</div>
+      <div class="sub" id="subReserves">Fetching…</div>
     </div>
 
-    <div class="stat card reveal" style="--accent:var(--good)">
+    <div class="stat card reveal" data-metric="crude" style="--accent:var(--good)">
       <div class="icon">🛢️</div>
       <div class="label">Crude output</div>
       <div class="value" id="kpiCrude">—</div>
       <div class="sub" id="subCrude">Fetching…</div>
     </div>
 
-    <div class="stat card reveal" style="--accent:#A855F7">
+    <div class="stat card reveal" data-metric="gdp" style="--accent:#A855F7">
       <div class="icon">🏗️</div>
       <div class="label">GDP growth</div>
       <div class="value" id="kpiGdp">—</div>
       <div class="sub" id="subGdp">Fetching…</div>
+    </div>
+
+    <div class="stat card reveal" data-metric="unemployment" style="--accent:var(--bad)">
+      <div class="icon">👷</div>
+      <div class="label">Unemployment</div>
+      <div class="value" id="kpiUnemployment">—</div>
+      <div class="sub" id="subUnemployment">Fetching…</div>
     </div>
   </section>
 
   <section class="section card reveal" id="trend">
     <div class="section-head">
       <div>
-        <h3 class="section-title">Recent movement</h3>
+        <h3 class="section-title">Live movement</h3>
       </div>
       <p class="section-desc">
-        This chart tracks the latest readings cached by the page itself, so it stays current every time the dashboard refreshes.
-        For oil, the benchmark series uses the public FRED dataset.
+        This chart plots the values captured by the dashboard each time it refreshes.
+        It gives you a simple history without pretending everything changes by the minute.
       </p>
     </div>
 
@@ -797,9 +778,9 @@ canvas{width:100% !important;height:100% !important}
         <button class="metric-btn" data-metric="inflation" type="button">Inflation</button>
         <button class="metric-btn" data-metric="mpr" type="button">MPR</button>
         <button class="metric-btn" data-metric="reserves" type="button">Reserves</button>
-        <button class="metric-btn" data-metric="crude" type="button">Crude output</button>
+        <button class="metric-btn" data-metric="crude" type="button">Crude</button>
         <button class="metric-btn" data-metric="gdp" type="button">GDP</button>
-        <button class="metric-btn" data-metric="brent" type="button">Brent</button>
+        <button class="metric-btn" data-metric="unemployment" type="button">Unemployment</button>
       </div>
       <div class="meta" id="trendMeta">Showing FX snapshots</div>
     </div>
@@ -808,7 +789,7 @@ canvas{width:100% !important;height:100% !important}
       <div class="chart-top">
         <div>
           <h4 class="chart-name" id="chartTitle">USD / NGN</h4>
-          <div class="chart-src" id="chartSource">Trading Economics snapshot cache · refreshed automatically</div>
+          <div class="chart-src" id="chartSource">Daily reference rate · Currency API</div>
         </div>
         <span class="badge" id="chartBadge">FX</span>
       </div>
@@ -820,28 +801,28 @@ canvas{width:100% !important;height:100% !important}
   <section class="section card reveal" id="sources">
     <div class="section-head">
       <div>
-        <h3 class="section-title">Source notes</h3>
+        <h3 class="section-title">What this page uses</h3>
       </div>
       <p class="section-desc">
-        These are the public references used on the page. The readings are kept current by the refresh cycle and the last cached value remains visible if a source fails briefly.
+        The goal is simple: current readings, clear labels, and a page that still makes sense on a weak connection.
       </p>
     </div>
 
-    <div class="methods">
+    <div class="columns-3">
       <div class="method card">
         <div class="micon">💱</div>
-        <h3>FX, inflation, GDP, policy, reserves</h3>
-        <p>Current Nigeria readings are pulled from public Trading Economics pages that cite CBN and NBS on the page text. They are refreshed automatically and cached locally.</p>
+        <h3>Currency</h3>
+        <p>USD/NGN uses a free daily currency feed with browser-friendly access and fallback support if the primary CDN is slow.</p>
       </div>
       <div class="method card">
-        <div class="micon">🛢️</div>
-        <h3>Oil benchmark</h3>
-        <p>Brent history comes from the public FRED CSV feed, so the oil chart can load a proper history instead of a single snapshot.</p>
+        <div class="micon">📊</div>
+        <h3>Macro snapshot</h3>
+        <p>Inflation, GDP growth, unemployment, policy rate, reserves, and crude production are read from a live Nigeria indicators snapshot.</p>
       </div>
       <div class="method card">
         <div class="micon">🧭</div>
-        <h3>Official references</h3>
-        <p>The footer keeps direct links to the relevant CBN pages for reserves, money-market indicators, macro indicators, exchange rates, and crude oil price.</p>
+        <h3>Official reference links</h3>
+        <p>The footer keeps CBN links for foreign reserves, money market indicators, macro indicators, exchange rates, and crude oil price.</p>
       </div>
     </div>
   </section>
@@ -851,7 +832,7 @@ canvas{width:100% !important;height:100% !important}
       <div>
         <h4>NaijaMetrics</h4>
         <p style="margin:0;line-height:1.8">
-          A plain public dashboard for Nigeria’s current macro picture. No noise, no filler, just the numbers people actually look for.
+          A plain public dashboard for Nigeria’s current macro picture. No filler, no overdone wording, just the numbers.
         </p>
       </div>
       <div>
@@ -880,118 +861,124 @@ canvas{width:100% !important;height:100% !important}
 /* =========================
    STATE
 ========================= */
-const STORAGE_KEY = 'naijametrics_v3';
-const THEME_KEY = 'naijametrics_theme_v3';
-const AUTO_REFRESH_MS = 15 * 60 * 1000;
+const STORAGE_KEY = 'naijametrics_state_v5';
+const THEME_KEY = 'naijametrics_theme_v5';
+const AUTO_REFRESH_MS = 10 * 60 * 1000;
+const MAX_HISTORY = 300;
+
+const METRICS = {
+  fx: {
+    label: 'USD / NGN',
+    short: 'FX',
+    color: '#F5C518',
+    source: 'Daily reference rate · Currency API',
+    unit: '₦'
+  },
+  inflation: {
+    label: 'Inflation',
+    short: 'Inflation',
+    color: '#FF5468',
+    source: 'Nigeria indicators snapshot',
+    unit: '%'
+  },
+  mpr: {
+    label: 'Monetary Policy Rate',
+    short: 'MPR',
+    color: '#00D46A',
+    source: 'Nigeria indicators snapshot',
+    unit: '%'
+  },
+  reserves: {
+    label: 'Foreign Reserves',
+    short: 'Reserves',
+    color: '#38BDF8',
+    source: 'Nigeria indicators snapshot',
+    unit: 'USDm'
+  },
+  crude: {
+    label: 'Crude Oil Production',
+    short: 'Crude',
+    color: '#22C55E',
+    source: 'Nigeria indicators snapshot',
+    unit: 'kbpd'
+  },
+  gdp: {
+    label: 'GDP Annual Growth',
+    short: 'GDP',
+    color: '#A855F7',
+    source: 'Nigeria indicators snapshot',
+    unit: '%'
+  },
+  unemployment: {
+    label: 'Unemployment',
+    short: 'Jobs',
+    color: '#EF4444',
+    source: 'Nigeria indicators snapshot',
+    unit: '%'
+  }
+};
 
 const state = {
   theme: localStorage.getItem(THEME_KEY) || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'),
   selectedMetric: 'fx',
-  chart: null,
-  chartData: {
+  latest: {},
+  history: {
     fx: [],
     inflation: [],
     mpr: [],
     reserves: [],
     crude: [],
     gdp: [],
-    brent: []
+    unemployment: []
   },
-  current: {},
-  brentSeries: [],
-  lastSnapshot: null
+  chart: null
 };
-
-const METRICS = {
-  fx: {
-    label: 'USD / NGN',
-    short: 'FX',
-    unit: '₦',
-    color: '#F5C518',
-    source: 'Trading Economics · Nigeria currency page',
-    trendText: 'Snapshot cache of the current USD/NGN reading.'
-  },
-  inflation: {
-    label: 'Inflation',
-    short: 'Inflation',
-    unit: '%',
-    color: '#FF5468',
-    source: 'Trading Economics · Nigeria inflation page',
-    trendText: 'Snapshot cache of the latest inflation reading.'
-  },
-  mpr: {
-    label: 'Monetary Policy Rate',
-    short: 'MPR',
-    unit: '%',
-    color: '#00D46A',
-    source: 'Trading Economics · Nigeria interest rate page',
-    trendText: 'Snapshot cache of the latest policy rate.'
-  },
-  reserves: {
-    label: 'Foreign Reserves',
-    short: 'Reserves',
-    unit: 'USDm',
-    color: '#38BDF8',
-    source: 'Trading Economics · Nigeria reserves page',
-    trendText: 'Snapshot cache of foreign reserves in USD million.'
-  },
-  crude: {
-    label: 'Crude Output',
-    short: 'Crude',
-    unit: 'kbd',
-    color: '#22C55E',
-    source: 'Trading Economics · Nigeria crude oil production page',
-    trendText: 'Snapshot cache of crude oil production in thousand barrels per day.'
-  },
-  gdp: {
-    label: 'GDP Growth',
-    short: 'GDP',
-    unit: '%',
-    color: '#A855F7',
-    source: 'Trading Economics · Nigeria GDP page',
-    trendText: 'Snapshot cache of quarterly GDP growth.'
-  },
-  brent: {
-    label: 'Brent Crude',
-    short: 'Brent',
-    unit: '$/bbl',
-    color: '#F97316',
-    source: 'FRED · Brent Europe daily series',
-    trendText: 'FRED daily Brent series.'
-  }
-};
-
-/* =========================
-   STORAGE
-========================= */
-function loadStore(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  }catch{
-    return null;
-  }
-}
-function saveStore(data){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
 
 /* =========================
    HELPERS
 ========================= */
-function fmtDate(d){
-  const pad = n => String(n).padStart(2,'0');
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+function saveState(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    latest: state.latest,
+    history: state.history
+  }));
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (parsed?.latest) state.latest = parsed.latest;
+    if (parsed?.history) state.history = parsed.history;
+  }catch{}
+}
+function setTheme(theme){
+  state.theme = theme;
+  document.documentElement.dataset.theme = theme;
+  localStorage.setItem(THEME_KEY, theme);
+  document.getElementById('themeBtn').textContent = theme === 'light' ? '☀ Light' : '☾ Dark';
+  document.getElementById('modeText').textContent = theme === 'light' ? 'Light' : 'Dark';
+}
+function setStatus(text){
+  document.getElementById('statusLine').textContent = text;
+  document.getElementById('liveLabel').textContent = text.includes('Refreshing') ? 'Refreshing…' : 'Live sync';
 }
 function fmtDateTime(ts){
   return new Intl.DateTimeFormat(undefined, {
-    dateStyle:'medium',
-    timeStyle:'short'
+    dateStyle: 'medium',
+    timeStyle: 'short'
   }).format(new Date(ts));
 }
-function toNumber(value){
-  const n = Number(String(value).replace(/,/g,'').trim());
+function fmtShort(ts){
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(new Date(ts));
+}
+function asNum(v){
+  const n = Number(String(v).replace(/,/g,'').trim());
   return Number.isFinite(n) ? n : null;
 }
 function latest(arr){
@@ -1000,7 +987,7 @@ function latest(arr){
 function prev(arr){
   return Array.isArray(arr) && arr.length > 1 ? arr[arr.length - 2] : null;
 }
-function delta(arr){
+function change(arr){
   const a = latest(arr), b = prev(arr);
   return (a && b && Number.isFinite(a.v) && Number.isFinite(b.v)) ? a.v - b.v : null;
 }
@@ -1013,73 +1000,400 @@ function signClass(n){
   if (n < 0) return 'down';
   return 'flat';
 }
-function formatMetric(metric, value){
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return '—';
-  const n = Number(value);
+function formatValue(metric, n){
+  if (n === null || n === undefined || Number.isNaN(Number(n))) return '—';
+  const v = Number(n);
   switch(metric){
-    case 'fx': return `₦${Math.round(n).toLocaleString()}`;
-    case 'reserves': return `US$${(n / 1000).toFixed(2)}B`;
-    case 'crude': return `${(n / 1000).toFixed(2)}M bpd`;
-    case 'brent': return `$${n.toFixed(2)}/bbl`;
-    default: return `${n.toFixed(2)}%`;
+    case 'fx': return `₦${Math.round(v).toLocaleString()}`;
+    case 'reserves': return `US$${(v / 1000).toFixed(2)}B`;
+    case 'crude': return `${(v / 1000).toFixed(2)}M`;
+    default: return `${v.toFixed(2)}%`;
   }
 }
 function formatChange(metric, d){
   if (d === null || d === undefined || Number.isNaN(Number(d))) return 'No prior reading';
   const n = Number(d);
-  const icon = n > 0 ? '▲' : n < 0 ? '▼' : '●';
+  const arrow = n > 0 ? '▲' : n < 0 ? '▼' : '●';
   switch(metric){
-    case 'fx':
-      return `${icon} ${Math.abs(n).toLocaleString(undefined,{maximumFractionDigits:0})} naira`;
-    case 'reserves':
-      return `${icon} US$${Math.abs(n/1000).toFixed(2)}B`;
-    case 'crude':
-      return `${icon} ${(Math.abs(n)/1000).toFixed(2)}M bpd`;
-    case 'brent':
-      return `${icon} $${Math.abs(n).toFixed(2)}/bbl`;
-    default:
-      return `${icon} ${Math.abs(n).toFixed(2)} pts`;
+    case 'fx': return `${arrow} ${Math.abs(n).toLocaleString(undefined,{maximumFractionDigits:0})} naira`;
+    case 'reserves': return `${arrow} US$${Math.abs(n/1000).toFixed(2)}B`;
+    case 'crude': return `${arrow} ${(Math.abs(n)/1000).toFixed(2)}M bpd`;
+    default: return `${arrow} ${Math.abs(n).toFixed(2)} pts`;
   }
-}
-function setStatus(text){
-  document.getElementById('statusLine').textContent = text;
-  document.getElementById('liveLabel').textContent = text.includes('Refreshing') ? 'Refreshing…' : 'Live sync';
-}
-function setTheme(theme){
-  state.theme = theme;
-  document.documentElement.dataset.theme = theme;
-  localStorage.setItem(THEME_KEY, theme);
-  document.getElementById('themeBtn').textContent = theme === 'light' ? '☀ Light' : '☾ Dark';
-  document.getElementById('modeText').textContent = theme === 'light' ? 'Light' : 'Dark';
 }
 function setActiveMetric(metric){
   state.selectedMetric = metric;
   document.querySelectorAll('#metricButtons .metric-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.metric === metric);
   });
-  document.getElementById('trendMeta').textContent = `${METRICS[metric].label} · ${METRICS[metric].trendText}`;
+  document.getElementById('trendMeta').textContent = `${METRICS[metric].label} · refreshed automatically`;
   document.getElementById('chartTitle').textContent = METRICS[metric].label;
   document.getElementById('chartSource').textContent = METRICS[metric].source;
   document.getElementById('chartBadge').textContent = METRICS[metric].short;
-  renderTrendChart(metric);
+  renderChart(metric);
 }
-function appendCache(metric, value){
+function appendHistory(metric, value, ts){
   if (!Number.isFinite(Number(value))) return;
-  const row = { t: Date.now(), v: Number(value) };
-  state.chartData[metric] = Array.isArray(state.chartData[metric]) ? state.chartData[metric] : [];
-  state.chartData[metric].push(row);
-  if (state.chartData[metric].length > 120) state.chartData[metric].shift();
+  if (!state.history[metric]) state.history[metric] = [];
+  state.history[metric].push({ t: ts, v: Number(value) });
+  if (state.history[metric].length > MAX_HISTORY) {
+    state.history[metric] = state.history[metric].slice(-MAX_HISTORY);
+  }
+}
+function normalizeText(text){
+  return String(text)
+    .replace(/\r/g, '\n')
+    .split('\n')
+    .map(line => line.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+}
+function findLine(lines, label, exclude = []){
+  const labelLower = label.toLowerCase();
+  return lines.find(line => {
+    const low = line.toLowerCase();
+    if (!low.includes(labelLower)) return false;
+    if (exclude.some(x => low.includes(x.toLowerCase()))) return false;
+    return /\d/.test(line) && /(percent|USD Million|NGN Million|BBL\/D\/1K|points|Mar\/26|Feb\/26|Jan\/26|Dec\/25|Dec\/24|Sep\/25|Nov\/25)/i.test(line);
+  }) || null;
+}
+function extractMetric(text, label, exclude = []){
+  const lines = normalizeText(text);
+  const line = findLine(lines, label, exclude);
+  if (!line) return null;
+  const idx = line.toLowerCase().indexOf(label.toLowerCase());
+  const segment = idx >= 0 ? line.slice(idx) : line;
+  const dateMatch = segment.match(/\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\/\d{2}\b/i);
+  const beforeDate = dateMatch ? segment.slice(0, dateMatch.index).trim() : segment;
+  const nums = (beforeDate.match(/-?\d[\d,]*(?:\.\d+)?/g) || []).map(v => Number(v.replace(/,/g,'')));
+  if (!nums.length) return null;
+  return {
+    current: nums[0] ?? null,
+    previous: nums[1] ?? null,
+    highest: nums[2] ?? null,
+    lowest: nums[3] ?? null,
+    asOf: dateMatch ? dateMatch[0] : '',
+    raw: line
+  };
+}
+async function fetchWithTimeout(url, timeoutMs = 15000, opts = {}){
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try{
+    const res = await fetch(url, { cache: 'no-store', signal: ctrl.signal, ...opts });
+    return res;
+  }finally{
+    clearTimeout(timer);
+  }
+}
+async function fetchText(url){
+  const candidates = [
+    url,
+    `https://r.jina.ai/http://${url.replace(/^https?:\/\//,'')}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+  ];
+  let lastErr = null;
+  for (const candidate of candidates){
+    try{
+      const res = await fetchWithTimeout(candidate, 15000);
+      if (!res.ok) continue;
+      return await res.text();
+    }catch(err){
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error('Failed to fetch text');
+}
+async function fetchJson(urls){
+  let lastErr = null;
+  for (const url of urls){
+    try{
+      const res = await fetchWithTimeout(url, 15000);
+      if (!res.ok) continue;
+      return await res.json();
+    }catch(err){
+      lastErr = err;
+    }
+  }
+  throw lastErr || new Error('Failed to fetch json');
+}
+function updateHeaderSummary(){
+  const fx = state.latest.fx?.value;
+  const infl = state.latest.inflation?.value;
+  const mpr = state.latest.mpr?.value;
+  const reserves = state.latest.reserves?.value;
+  const summary = [
+    fx !== null && fx !== undefined ? `FX: ${formatValue('fx', fx)}` : null,
+    infl !== null && infl !== undefined ? `Inflation: ${formatValue('inflation', infl)}` : null,
+    mpr !== null && mpr !== undefined ? `MPR: ${formatValue('mpr', mpr)}` : null,
+    reserves !== null && reserves !== undefined ? `Reserves: ${formatValue('reserves', reserves)}` : null
+  ].filter(Boolean).join(' · ');
+  document.getElementById('statusLine').textContent = summary || 'Loading current readings…';
 }
 
 /* =========================
-   CURSOR
+   DATA SOURCES
+========================= */
+async function fetchFxCurrent(){
+  const json = await fetchJson([
+    'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd/ngn.json',
+    'https://latest.currency-api.pages.dev/v1/currencies/usd/ngn.json'
+  ]);
+  const rate = json?.usd?.ngn ?? json?.ngn ?? null;
+  return {
+    current: asNum(rate),
+    previous: null,
+    asOf: json?.date || ''
+  };
+}
+async function fetchNigeriaSnapshot(){
+  const text = await fetchText('https://www.tradingeconomics.com/nigeria/indicators');
+  const inflation = extractMetric(text, 'Inflation Rate', ['Inflation Rate MoM', 'Core Inflation Rate']);
+  const mpr = extractMetric(text, 'Interest Rate', ['Deposit Interest Rate', 'Lending Rate']);
+  const reserves = extractMetric(text, 'Foreign Exchange Reserves');
+  const crude = extractMetric(text, 'Crude Oil Production');
+  const gdp = extractMetric(text, 'GDP Annual Growth Rate');
+  const unemployment = extractMetric(text, 'Unemployment Rate');
+  const crRatio = extractMetric(text, 'Cash Reserve Ratio');
+  const stock = extractMetric(text, 'Stock Market');
+  return { inflation, mpr, reserves, crude, gdp, unemployment, crRatio, stock };
+}
+
+/* =========================
+   RENDERING
+========================= */
+function syncStat(metric, current, previous, asOf, subId, valueId){
+  const valEl = document.getElementById(valueId);
+  const subEl = document.getElementById(subId);
+  if (!valEl || !subEl) return;
+
+  if (current === null || current === undefined || Number.isNaN(Number(current))) {
+    valEl.textContent = '—';
+    subEl.textContent = 'No reading';
+    return;
+  }
+
+  valEl.textContent = formatValue(metric, current);
+
+  const delta = previous !== null && previous !== undefined ? Number(current) - Number(previous) : null;
+  const sign = signClass(delta);
+  subEl.innerHTML = `
+    ${asOf ? `${asOf} · ` : ''}
+    <span class="${sign}">${formatChange(metric, delta)}</span>
+  `;
+}
+function addLivePoint(metric, value){
+  const ts = Date.now();
+  appendHistory(metric, value, ts);
+}
+function renderChart(metric){
+  const series = state.history[metric] || [];
+  const labels = series.map(p => fmtShort(p.t));
+  const data = series.map(p => p.v);
+  const color = METRICS[metric].color;
+
+  if (state.chart) state.chart.destroy();
+
+  const ctx = document.getElementById('trendChart');
+  state.chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: METRICS[metric].label,
+        data,
+        borderColor: color,
+        backgroundColor: color + '20',
+        borderWidth: 2,
+        pointRadius: 2.5,
+        pointHoverRadius: 5,
+        pointBackgroundColor: color,
+        fill: true,
+        tension: 0.35
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--panel'),
+          borderColor: getComputedStyle(document.documentElement).getPropertyValue('--border2'),
+          borderWidth: 1,
+          titleColor: getComputedStyle(document.documentElement).getPropertyValue('--text'),
+          bodyColor: getComputedStyle(document.documentElement).getPropertyValue('--muted'),
+          padding: 10,
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${formatValue(metric, ctx.raw)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border') },
+          ticks: { maxRotation: 0, maxTicksLimit: 8 }
+        },
+        y: {
+          grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border') },
+          ticks: {
+            callback: (v) => formatValue(metric, v)
+          }
+        }
+      }
+    }
+  });
+
+  const last = latest(series);
+  const first = series.length ? series[0] : null;
+  const move = last && first ? last.v - first.v : null;
+  const pct = last && first && first.v !== 0 ? ((last.v - first.v) / first.v) * 100 : null;
+
+  document.getElementById('chartInsight').innerHTML = last
+    ? `<strong>Snapshot history:</strong> latest reading is ${formatValue(metric, last.v)}. ${pct !== null ? `Across the saved refresh history, the move is ${Math.abs(pct).toFixed(2)}%.` : ''}`
+    : `<strong>No history yet.</strong> The chart fills as the page keeps refreshing.`;
+}
+function renderAll(){
+  updateHeaderSummary();
+  const fx = state.latest.fx || {};
+  const inflation = state.latest.inflation || {};
+  const mpr = state.latest.mpr || {};
+  const reserves = state.latest.reserves || {};
+  const crude = state.latest.crude || {};
+  const gdp = state.latest.gdp || {};
+  const unemployment = state.latest.unemployment || {};
+
+  syncStat('fx', fx.value, fx.previous, fx.asOf, 'subFx', 'kpiFx');
+  syncStat('inflation', inflation.value, inflation.previous, inflation.asOf, 'subInflation', 'kpiInflation');
+  syncStat('mpr', mpr.value, mpr.previous, mpr.asOf, 'subMpr', 'kpiMpr');
+  syncStat('reserves', reserves.value, reserves.previous, reserves.asOf, 'subReserves', 'kpiReserves');
+  syncStat('crude', crude.value, crude.previous, crude.asOf, 'subCrude', 'kpiCrude');
+  syncStat('gdp', gdp.value, gdp.previous, gdp.asOf, 'subGdp', 'kpiGdp');
+  syncStat('unemployment', unemployment.value, unemployment.previous, unemployment.asOf, 'subUnemployment', 'kpiUnemployment');
+
+  document.getElementById('lastRefresh').textContent = fmtDateTime(Date.now());
+
+  renderChart(state.selectedMetric);
+}
+function adoptSnapshot(snapshot){
+  const ts = Date.now();
+
+  if (snapshot.fx?.current !== null && snapshot.fx?.current !== undefined) {
+    state.latest.fx = { value: snapshot.fx.current, previous: snapshot.fx.previous, asOf: snapshot.fx.asOf };
+    addLivePoint('fx', snapshot.fx.current);
+  }
+  if (snapshot.inflation?.current !== null && snapshot.inflation?.current !== undefined) {
+    state.latest.inflation = { value: snapshot.inflation.current, previous: snapshot.inflation.previous, asOf: snapshot.inflation.asOf };
+    addLivePoint('inflation', snapshot.inflation.current);
+  }
+  if (snapshot.mpr?.current !== null && snapshot.mpr?.current !== undefined) {
+    state.latest.mpr = { value: snapshot.mpr.current, previous: snapshot.mpr.previous, asOf: snapshot.mpr.asOf };
+    addLivePoint('mpr', snapshot.mpr.current);
+  }
+  if (snapshot.reserves?.current !== null && snapshot.reserves?.current !== undefined) {
+    state.latest.reserves = { value: snapshot.reserves.current, previous: snapshot.reserves.previous, asOf: snapshot.reserves.asOf };
+    addLivePoint('reserves', snapshot.reserves.current);
+  }
+  if (snapshot.crude?.current !== null && snapshot.crude?.current !== undefined) {
+    state.latest.crude = { value: snapshot.crude.current, previous: snapshot.crude.previous, asOf: snapshot.crude.asOf };
+    addLivePoint('crude', snapshot.crude.current);
+  }
+  if (snapshot.gdp?.current !== null && snapshot.gdp?.current !== undefined) {
+    state.latest.gdp = { value: snapshot.gdp.current, previous: snapshot.gdp.previous, asOf: snapshot.gdp.asOf };
+    addLivePoint('gdp', snapshot.gdp.current);
+  }
+  if (snapshot.unemployment?.current !== null && snapshot.unemployment?.current !== undefined) {
+    state.latest.unemployment = { value: snapshot.unemployment.current, previous: snapshot.unemployment.previous, asOf: snapshot.unemployment.asOf };
+    addLivePoint('unemployment', snapshot.unemployment.current);
+  }
+
+  if (snapshot.crRatio?.current !== null && snapshot.crRatio?.current !== undefined) {
+    state.latest.crRatio = { value: snapshot.crRatio.current, previous: snapshot.crRatio.previous, asOf: snapshot.crRatio.asOf };
+  }
+
+  for (const key of Object.keys(state.history)) {
+    if (state.history[key].length > MAX_HISTORY) state.history[key] = state.history[key].slice(-MAX_HISTORY);
+  }
+  saveState();
+}
+
+/* =========================
+   REFRESH
+========================= */
+async function refreshData(){
+  setStatus('Refreshing current readings…');
+  try{
+    const [fx, snap] = await Promise.all([
+      fetchFxCurrent(),
+      fetchNigeriaSnapshot()
+    ]);
+
+    const composed = {
+      fx,
+      inflation: snap.inflation,
+      mpr: snap.mpr,
+      reserves: snap.reserves,
+      crude: snap.crude,
+      gdp: snap.gdp,
+      unemployment: snap.unemployment,
+      crRatio: snap.crRatio
+    };
+
+    adoptSnapshot(composed);
+    renderAll();
+
+    setStatus('Live data updated successfully.');
+  }catch(err){
+    renderAll();
+    setStatus('Using the last saved readings for now. The page will try again on the next refresh.');
+  }
+}
+function start(){
+  loadState();
+  setTheme(state.theme);
+
+  if (!state.latest.fx && state.history.fx.length) {
+    state.latest.fx = { value: latest(state.history.fx).v, previous: null, asOf: 'Cached' };
+  }
+  if (!state.latest.inflation && state.history.inflation.length) {
+    state.latest.inflation = { value: latest(state.history.inflation).v, previous: null, asOf: 'Cached' };
+  }
+  if (!state.latest.mpr && state.history.mpr.length) {
+    state.latest.mpr = { value: latest(state.history.mpr).v, previous: null, asOf: 'Cached' };
+  }
+  if (!state.latest.reserves && state.history.reserves.length) {
+    state.latest.reserves = { value: latest(state.history.reserves).v, previous: null, asOf: 'Cached' };
+  }
+  if (!state.latest.crude && state.history.crude.length) {
+    state.latest.crude = { value: latest(state.history.crude).v, previous: null, asOf: 'Cached' };
+  }
+  if (!state.latest.gdp && state.history.gdp.length) {
+    state.latest.gdp = { value: latest(state.history.gdp).v, previous: null, asOf: 'Cached' };
+  }
+  if (!state.latest.unemployment && state.history.unemployment.length) {
+    state.latest.unemployment = { value: latest(state.history.unemployment).v, previous: null, asOf: 'Cached' };
+  }
+
+  setActiveMetric('fx');
+  renderAll();
+
+  refreshData();
+
+  setInterval(() => {
+    if (document.visibilityState === 'visible') refreshData();
+  }, AUTO_REFRESH_MS);
+}
+
+/* =========================
+   CURSOR + REVEAL
 ========================= */
 const cur = document.getElementById('cursor');
 const ring = document.getElementById('cursor-ring');
 let mx = 0, my = 0, rx = 0, ry = 0;
 
 document.addEventListener('mousemove', e => {
-  mx = e.clientX; my = e.clientY;
+  mx = e.clientX;
+  my = e.clientY;
   if (cur) {
     cur.style.left = mx + 'px';
     cur.style.top = my + 'px';
@@ -1094,7 +1408,8 @@ document.addEventListener('mousemove', e => {
   }
   requestAnimationFrame(loop);
 })();
-document.querySelectorAll('a,button,.tab,.theme-btn,.refresh-btn,.metric-btn').forEach(el => {
+
+document.querySelectorAll('a,button,.tab,.theme-btn,.refresh-btn,.metric-btn,.card').forEach(el => {
   el.addEventListener('mouseenter', () => {
     if (!ring) return;
     ring.style.width = '52px';
@@ -1109,9 +1424,6 @@ document.querySelectorAll('a,button,.tab,.theme-btn,.refresh-btn,.metric-btn').f
   });
 });
 
-/* =========================
-   REVEAL
-========================= */
 const obs = new IntersectionObserver(entries => {
   entries.forEach(entry => {
     if (entry.isIntersecting) entry.target.classList.add('show');
@@ -1120,370 +1432,21 @@ const obs = new IntersectionObserver(entries => {
 document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
 
 /* =========================
-   DATA FETCHERS
-========================= */
-async function fetchText(url){
-  const candidates = [
-    url,
-    `https://r.jina.ai/http://${url.replace(/^https?:\/\//,'')}`
-  ];
-  for (const candidate of candidates){
-    try{
-      const res = await fetch(candidate, { cache:'no-store' });
-      if (!res.ok) continue;
-      return await res.text();
-    }catch{}
-  }
-  throw new Error(`Unable to fetch ${url}`);
-}
-
-async function fetchFx(){
-  const text = await fetchText('https://tradingeconomics.com/nigeria/currency');
-  const m = text.match(/USD\/NGN exchange rate (?:rose|fell|traded) to ([\d,]+\.\d+)\s+on\s+([A-Za-z]+\s+\d{1,2},\s+\d{4})/i)
-         || text.match(/Exchange Rate\s+([\d,]+\.\d+)/i);
-  const daily = text.match(/up\s+([\d.]+)%\s+from the previous session/i);
-  return {
-    value: m ? toNumber(m[1] || m[0]) : null,
-    date: m ? m[2] || null : null,
-    change: daily ? toNumber(daily[1]) : null
-  };
-}
-
-async function fetchInflation(){
-  const text = await fetchText('https://tradingeconomics.com/nigeria/inflation-cpi');
-  const m = text.match(/Inflation Rate in Nigeria decreased to ([\d.]+) percent in ([A-Za-z]+\s+\d{4}) from ([\d.]+) in/i)
-         || text.match(/annual inflation rate eased slightly to ([\d.]+)% in ([A-Za-z]+\s+\d{4}) from ([\d.]+)%/i);
-  const prevMatch = text.match(/from\s+([\d.]+)%\s+in\s+[A-Za-z]+\s+\d{4}/i);
-  return {
-    value: m ? toNumber(m[1]) : null,
-    date: m ? m[2] : null,
-    prev: m ? toNumber(m[3]) : (prevMatch ? toNumber(prevMatch[1]) : null)
-  };
-}
-
-async function fetchMpr(){
-  const text = await fetchText('https://tradingeconomics.com/nigeria/interest-rate');
-  const m = text.match(/benchmark interest rate in Nigeria was last recorded at ([\d.]+) percent/i);
-  const prev = text.match(/kept at 27%|unchanged at 27%/i);
-  return {
-    value: m ? toNumber(m[1]) : null,
-    date: 'Mar 2026',
-    prev: prev ? 27 : null
-  };
-}
-
-async function fetchReserves(){
-  const text = await fetchText('https://tradingeconomics.com/nigeria/foreign-exchange-reserves');
-  const m = text.match(/Foreign Exchange Reserves in Nigeria increased to ([\d,]+) USD Million in ([A-Za-z]+\s+from?)\s+([\d,]+)\s+USD Million in ([A-Za-z]+) of (\d{4})/i)
-         || text.match(/Foreign Exchange Reserves in Nigeria increased to ([\d,]+) USD Million in ([A-Za-z]+) from ([\d,]+) USD Million in ([A-Za-z]+) of (\d{4})/i);
-  return {
-    value: m ? toNumber(m[1]) : null,
-    date: m ? `${m[2].replace(/\s+from?$/,'')} ${m[5] || m[4]}` : null,
-    prev: m ? toNumber(m[3]) : null
-  };
-}
-
-async function fetchCrude(){
-  const text = await fetchText('https://tradingeconomics.com/nigeria/crude-oil-production');
-  const m = text.match(/Crude Oil Production in Nigeria decreased to ([\d.]+)\s+BBL\/D\/1K in ([A-Za-z]+) from ([\d.]+)\s+BBL\/D\/1K in ([A-Za-z]+) of (\d{4})/i)
-         || text.match(/Crude Oil Production in Nigeria increased to ([\d.]+)\s+BBL\/D\/1K in ([A-Za-z]+) from ([\d.]+)\s+BBL\/D\/1K in ([A-Za-z]+) of (\d{4})/i);
-  return {
-    value: m ? toNumber(m[1]) : null,
-    date: m ? `${m[2]} ${m[5]}` : null,
-    prev: m ? toNumber(m[3]) : null
-  };
-}
-
-async function fetchGdp(){
-  const text = await fetchText('https://tradingeconomics.com/nigeria/gdp-growth-annual');
-  const m = text.match(/The Gross Domestic Product \(GDP\) in Nigeria expanded ([\d.]+) percent in the fourth quarter of (\d{4})/i)
-         || text.match(/Nigeria's economic growth reached ([\d.]+)%/i);
-  const prev = text.match(/GDP Growth Rate YoY\s+Q4\s+([\d.]+)%/i);
-  return {
-    value: m ? toNumber(m[1]) : null,
-    date: m ? `Q4 ${m[2]}` : null,
-    prev: prev ? toNumber(prev[1]) : null
-  };
-}
-
-async function fetchBrentSeries(){
-  const text = await fetchText('https://fred.stlouisfed.org/graph/fredgraph.csv?id=DCOILBRENTEU');
-  const lines = text.trim().split(/\r?\n/);
-  const rows = [];
-  for (const line of lines.slice(1)){
-    const [date, value] = line.split(',');
-    const v = toNumber(value);
-    if (date && Number.isFinite(v)) rows.push({ t: Date.parse(date), v });
-  }
-  return rows.filter(r => Number.isFinite(r.t)).sort((a,b) => a.t - b.t);
-}
-
-/* =========================
-   CHART
-========================= */
-function destroyChart(){
-  if (state.chart){
-    state.chart.destroy();
-    state.chart = null;
-  }
-}
-function buildSeries(metric){
-  if (metric === 'brent'){
-    return state.brentSeries.map(p => ({ x: p.t, y: p.v }));
-  }
-  return (state.chartData[metric] || []).map(p => ({ x: p.t, y: p.v }));
-}
-function chartLabel(metric, value){
-  switch(metric){
-    case 'fx': return `₦${Math.round(value).toLocaleString()}`;
-    case 'reserves': return `US$${(value/1000).toFixed(2)}B`;
-    case 'crude': return `${(value/1000).toFixed(2)}M bpd`;
-    case 'brent': return `$${value.toFixed(2)}/bbl`;
-    default: return `${value.toFixed(2)}%`;
-  }
-}
-function renderTrendChart(metric){
-  const data = buildSeries(metric);
-  const canvas = document.getElementById('trendChart');
-  const color = METRICS[metric].color;
-
-  destroyChart();
-
-  state.chart = new Chart(canvas, {
-    type:'line',
-    data:{
-      datasets:[{
-        label:METRICS[metric].label,
-        data,
-        borderColor:color,
-        backgroundColor:color + '20',
-        fill:true,
-        borderWidth:2,
-        pointRadius:2.5,
-        pointHoverRadius:5,
-        pointBackgroundColor:color,
-        tension:0.35
-      }]
-    },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      parsing:false,
-      interaction:{mode:'index',intersect:false},
-      plugins:{
-        legend:{display:false},
-        tooltip:{
-          backgroundColor:getComputedStyle(document.documentElement).getPropertyValue('--panel'),
-          borderColor:getComputedStyle(document.documentElement).getPropertyValue('--border2'),
-          borderWidth:1,
-          titleColor:getComputedStyle(document.documentElement).getPropertyValue('--text'),
-          bodyColor:getComputedStyle(document.documentElement).getPropertyValue('--muted'),
-          padding:10,
-          callbacks:{
-            label:(ctx)=> `${ctx.dataset.label}: ${chartLabel(metric, ctx.raw.y)}`
-          }
-        }
-      },
-      scales:{
-        x:{
-          type:'time',
-          time:{unit: metric === 'brent' ? 'month' : 'day'},
-          grid:{color:getComputedStyle(document.documentElement).getPropertyValue('--border')},
-          ticks:{maxTicksLimit:8, maxRotation:0}
-        },
-        y:{
-          grid:{color:getComputedStyle(document.documentElement).getPropertyValue('--border')},
-          ticks:{callback:v => chartLabel(metric, v)}
-        }
-      }
-    }
-  });
-
-  const series = data.map(p => p.y);
-  const last = series.length ? series[series.length - 1] : null;
-  const first = series.length ? series[0] : null;
-  const change = (last !== null && first !== null) ? last - first : null;
-  const pct = (last !== null && first !== null && first !== 0) ? ((last - first) / first) * 100 : null;
-
-  document.getElementById('chartInsight').innerHTML =
-    last === null
-      ? `<strong>No data yet.</strong> The next refresh will populate this view.`
-      : `<strong>Range view:</strong> latest reading is ${chartLabel(metric, last)}. ${pct !== null ? `Across the cached series, the move is ${Math.abs(pct).toFixed(2)}%.` : ''}`;
-}
-
-/* =========================
-   RENDERING
-========================= */
-function upsertCard(id, value, sub){
-  document.getElementById(id).textContent = value ?? '—';
-  document.getElementById(sub.id).innerHTML = sub.html;
-}
-
-function addSnapshot(current){
-  const snapshot = {
-    t: Date.now(),
-    fx: current.fx?.value ?? null,
-    inflation: current.inflation?.value ?? null,
-    mpr: current.mpr?.value ?? null,
-    reserves: current.reserves?.value ?? null,
-    crude: current.crude?.value ?? null,
-    gdp: current.gdp?.value ?? null
-  };
-  state.lastSnapshot = snapshot;
-  state.chartData.fx.push({ t: snapshot.t, v: snapshot.fx });
-  state.chartData.inflation.push({ t: snapshot.t, v: snapshot.inflation });
-  state.chartData.mpr.push({ t: snapshot.t, v: snapshot.mpr });
-  state.chartData.reserves.push({ t: snapshot.t, v: snapshot.reserves });
-  state.chartData.crude.push({ t: snapshot.t, v: snapshot.crude });
-  state.chartData.gdp.push({ t: snapshot.t, v: snapshot.gdp });
-
-  for (const k of ['fx','inflation','mpr','reserves','crude','gdp']){
-    state.chartData[k] = state.chartData[k].filter(p => p.v !== null);
-    if (state.chartData[k].length > 120) state.chartData[k] = state.chartData[k].slice(-120);
-  }
-
-  saveStore({
-    chartData: state.chartData,
-    lastSnapshot: snapshot,
-    brentSeries: state.brentSeries
-  });
-}
-
-function applyCachedStore(){
-  const store = loadStore();
-  if (!store) return;
-  if (store.chartData) state.chartData = store.chartData;
-  if (store.lastSnapshot) state.lastSnapshot = store.lastSnapshot;
-  if (Array.isArray(store.brentSeries)) state.brentSeries = store.brentSeries;
-}
-
-function renderCurrent(current){
-  const fx = current.fx || {};
-  const inflation = current.inflation || {};
-  const mpr = current.mpr || {};
-  const reserves = current.reserves || {};
-  const crude = current.crude || {};
-  const gdp = current.gdp || {};
-
-  document.getElementById('kpiFx').textContent = formatMetric('fx', fx.value);
-  document.getElementById('subFx').innerHTML = fx.value !== null
-    ? `${fx.date ? fx.date : 'Latest'} · ${formatChange('fx', fx.prev !== null ? fx.value - fx.prev : null)}`
-    : 'No reading';
-
-  document.getElementById('kpiInf').textContent = formatMetric('inflation', inflation.value);
-  document.getElementById('subInf').innerHTML = inflation.value !== null
-    ? `${inflation.date || 'Latest'} · ${formatChange('inflation', inflation.prev !== null ? inflation.value - inflation.prev : null)}`
-    : 'No reading';
-
-  document.getElementById('kpiMpr').textContent = formatMetric('mpr', mpr.value);
-  document.getElementById('subMpr').innerHTML = mpr.value !== null
-    ? `${mpr.date || 'Latest'} · ${formatChange('mpr', mpr.prev !== null ? mpr.value - mpr.prev : null)}`
-    : 'No reading';
-
-  document.getElementById('kpiRes').textContent = formatMetric('reserves', reserves.value);
-  document.getElementById('subRes').innerHTML = reserves.value !== null
-    ? `${reserves.date || 'Latest'} · ${formatChange('reserves', reserves.prev !== null ? reserves.value - reserves.prev : null)}`
-    : 'No reading';
-
-  document.getElementById('kpiCrude').textContent = formatMetric('crude', crude.value);
-  document.getElementById('subCrude').innerHTML = crude.value !== null
-    ? `${crude.date || 'Latest'} · ${formatChange('crude', crude.prev !== null ? crude.value - crude.prev : null)}`
-    : 'No reading';
-
-  document.getElementById('kpiGdp').textContent = formatMetric('gdp', gdp.value);
-  document.getElementById('subGdp').innerHTML = gdp.value !== null
-    ? `${gdp.date || 'Latest'} · ${formatChange('gdp', gdp.prev !== null ? gdp.value - gdp.prev : null)}`
-    : 'No reading';
-
-  document.getElementById('lastRefresh').textContent = fmtDateTime(Date.now());
-}
-
-function updateFromCurrent(current){
-  const store = loadStore() || {};
-  for (const key of ['fx','inflation','mpr','reserves','crude','gdp']){
-    const val = current[key]?.value;
-    if (Number.isFinite(Number(val))) appendCache(key, Number(val));
-  }
-  saveStore({
-    chartData: state.chartData,
-    lastSnapshot: state.lastSnapshot,
-    brentSeries: state.brentSeries
-  });
-}
-
-async function refreshData(){
-  setStatus('Refreshing live readings…');
-  try{
-    const [fx, inflation, mpr, reserves, crude, gdp, brent] = await Promise.all([
-      fetchFx(),
-      fetchInflation(),
-      fetchMpr(),
-      fetchReserves(),
-      fetchCrude(),
-      fetchGdp(),
-      fetchBrentSeries()
-    ]);
-
-    state.current = { fx, inflation, mpr, reserves, crude, gdp };
-    state.brentSeries = brent;
-
-    updateFromCurrent(state.current);
-    addSnapshot(state.current);
-    renderCurrent(state.current);
-
-    if (state.selectedMetric === 'brent' && state.brentSeries.length){
-      renderTrendChart('brent');
-    }else{
-      setActiveMetric(state.selectedMetric);
-    }
-
-    setStatus('Current readings updated.');
-  }catch(err){
-    setStatus('Some readings are temporarily unavailable. Showing the last cached values.');
-    renderCurrent(state.current);
-    if (state.selectedMetric) renderTrendChart(state.selectedMetric);
-  }
-}
-
-function start(){
-  applyCachedStore();
-  setTheme(state.theme);
-
-  if (state.chartData.fx?.length || state.chartData.inflation?.length || state.chartData.mpr?.length){
-    state.current = {
-      fx: latest(state.chartData.fx) ? { value: latest(state.chartData.fx).v, date:'Cached', prev:null } : {},
-      inflation: latest(state.chartData.inflation) ? { value: latest(state.chartData.inflation).v, date:'Cached', prev:null } : {},
-      mpr: latest(state.chartData.mpr) ? { value: latest(state.chartData.mpr).v, date:'Cached', prev:null } : {},
-      reserves: latest(state.chartData.reserves) ? { value: latest(state.chartData.reserves).v, date:'Cached', prev:null } : {},
-      crude: latest(state.chartData.crude) ? { value: latest(state.chartData.crude).v, date:'Cached', prev:null } : {},
-      gdp: latest(state.chartData.gdp) ? { value: latest(state.chartData.gdp).v, date:'Cached', prev:null } : {}
-    };
-    renderCurrent(state.current);
-  }
-
-  refreshData();
-  setActiveMetric('fx');
-
-  setInterval(() => {
-    if (document.visibilityState === 'visible') refreshData();
-  }, AUTO_REFRESH_MS);
-}
-
-/* =========================
    INTERACTIONS
 ========================= */
 document.getElementById('themeBtn').addEventListener('click', () => {
   setTheme(state.theme === 'dark' ? 'light' : 'dark');
 });
-
-document.getElementById('refreshBtn').addEventListener('click', () => refreshData());
-
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  refreshData();
+});
 document.getElementById('metricButtons').addEventListener('click', e => {
   const btn = e.target.closest('.metric-btn');
   if (!btn) return;
-  const metric = btn.dataset.metric;
-  setActiveMetric(metric);
-  renderTrendChart(metric);
+  setActiveMetric(btn.dataset.metric);
+});
+document.querySelectorAll('.stat[data-metric]').forEach(card => {
+  card.addEventListener('click', () => setActiveMetric(card.dataset.metric));
 });
 
 /* =========================
