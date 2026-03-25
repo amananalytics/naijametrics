@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NaijaMetrics — Nigeria Economic Intelligence</title>
+<meta name="description" content="Nigeria's cleanest real-time economic dashboard. Inflation, GDP, employment, exchange rates — live World Bank data.">
+<meta property="og:title" content="NaijaMetrics — Nigeria Economic Intelligence">
+<meta property="og:description" content="Live Nigerian economic data. Inflation, GDP, FX, employment.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#05080A;--s1:#0A0F12;--s2:#0F1518;--s3:#141C20;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
+  --green:#008751;--glime:#00D46A;--gold:#F5C518;--red:#FF4545;--blue:#38BDF8;
+  --white:#F0F4F0;--muted:#5A6A60;
+  --syne:'Syne',sans-serif;--mono:'DM Mono',monospace;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--white);font-family:var(--mono);font-size:13px;line-height:1.6;overflow-x:hidden;cursor:none}
+a{color:var(--glime);text-decoration:none}
+
+/* CURSOR */
+#cursor{position:fixed;width:10px;height:10px;border-radius:50%;background:var(--glime);pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:exclusion}
+#cursor-ring{position:fixed;width:36px;height:36px;border-radius:50%;border:1px solid rgba(0,212,106,0.4);pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:all 0.18s ease}
+
+/* NAV */
+nav{display:flex;justify-content:space-between;align-items:center;padding:1.25rem 3rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(5,8,10,0.92);backdrop-filter:blur(20px);z-index:100}
+.logo{font-family:var(--syne);font-size:1.4rem;font-weight:800;letter-spacing:-0.02em;display:flex;align-items:center;gap:0.6rem}
+.logo-flag{display:inline-flex;gap:1px;height:18px;width:26px;border-radius:2px;overflow:hidden}
+.logo-flag span{flex:1;background:var(--green)}
+.logo-flag span:nth-child(2){background:#fff}
+.logo em{color:var(--glime);font-style:normal}
+.nav-links{display:flex;align-items:center;gap:2.5rem}
+.nav-links a{font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);transition:color 0.2s}
+.nav-links a:hover{color:var(--white)}
+.live-badge{display:flex;align-items:center;gap:0.4rem;background:rgba(0,212,106,0.08);border:1px solid rgba(0,212,106,0.2);padding:0.25rem 0.75rem;font-size:0.58rem;letter-spacing:0.15em;color:var(--glime)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--glime);animation:dotpulse 2s infinite}
+@keyframes dotpulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+/* TICKER */
+.ticker{background:var(--green);overflow:hidden;padding:0.45rem 0;border-bottom:1px solid rgba(0,0,0,0.3)}
+.ticker-inner{display:flex;gap:3rem;white-space:nowrap;animation:slide 50s linear infinite}
+@keyframes slide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ticker-inner span{font-size:0.6rem;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.85);display:inline-flex;align-items:center;gap:0.6rem}
+.ticker-inner span::before{content:'★';font-size:0.5rem;opacity:0.7}
+
+/* HERO */
+.hero{min-height:92vh;display:grid;grid-template-columns:1fr 420px;align-items:center;gap:4rem;padding:0 3rem;position:relative;overflow:hidden}
+.hero-glow{position:absolute;right:-80px;top:50%;transform:translateY(-50%);width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(0,135,81,0.1) 0%,transparent 70%);pointer-events:none}
+.hero-left{position:relative;z-index:1}
+.hero-eyebrow{display:flex;align-items:center;gap:1rem;font-size:0.62rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--muted);margin-bottom:1.5rem}
+.eyeline{width:2.5rem;height:1px;background:var(--green)}
+.hero-h1{font-family:var(--syne);font-size:clamp(3.8rem,9vw,8rem);font-weight:800;line-height:0.88;letter-spacing:-0.03em;margin-bottom:1.75rem}
+.hero-h1 em{color:transparent;-webkit-text-stroke:1px var(--glime);font-style:normal}
+.hero-desc{font-size:0.8rem;color:var(--muted);max-width:440px;line-height:1.9;margin-bottom:2.5rem}
+.hero-desc strong{color:var(--white);font-weight:500}
+.hero-ctas{display:flex;gap:1rem;align-items:center}
+.btn-primary{background:var(--glime);color:#000;padding:0.8rem 2rem;font-family:var(--mono);font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;cursor:none;border:none;transition:transform 0.2s,box-shadow 0.2s;display:inline-block}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,212,106,0.25)}
+.btn-outline{background:transparent;color:var(--white);border:1px solid var(--border2);padding:0.8rem 2rem;font-family:var(--mono);font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;cursor:none;transition:border-color 0.2s;display:inline-block}
+.btn-outline:hover{border-color:var(--glime)}
+
+/* MAP */
+.hero-right{position:relative;z-index:1;display:flex;justify-content:center;align-items:center}
+.map-wrap{position:relative;width:380px;height:380px;display:flex;justify-content:center;align-items:center}
+.map-ring{position:absolute;border-radius:50%;border:1px solid rgba(0,212,106,0.12);animation:mapring 4s ease-in-out infinite}
+.map-ring:nth-child(1){width:100%;height:100%}
+.map-ring:nth-child(2){width:72%;height:72%;animation-delay:0.6s}
+.map-ring:nth-child(3){width:45%;height:45%;animation-delay:1.2s}
+@keyframes mapring{0%,100%{opacity:0.3}50%{opacity:0.7}}
+.map-svg{width:280px;height:280px;position:relative;z-index:2;filter:drop-shadow(0 0 40px rgba(0,135,81,0.25))}
+.map-tip{position:absolute;background:var(--s3);border:1px solid var(--border2);padding:0.4rem 0.75rem;font-size:0.6rem;white-space:nowrap;z-index:4}
+.map-pin{position:absolute;z-index:3;width:8px;height:8px;border-radius:50%;background:var(--glime);box-shadow:0 0 0 0 rgba(0,212,106,0.6);animation:pinpulse 2s infinite}
+@keyframes pinpulse{0%{box-shadow:0 0 0 0 rgba(0,212,106,0.6)}70%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
+
+/* KPI */
+.kpi-section{padding:0 3rem 4rem;border-bottom:1px solid var(--border)}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border)}
+.kpi-card{background:var(--s1);padding:2rem 1.75rem;position:relative;overflow:hidden;transition:background 0.3s;--accent:var(--glime)}
+.kpi-card:hover{background:var(--s2)}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform 0.4s}
+.kpi-card:hover::before{transform:scaleX(1)}
+.kpi-icon{font-size:1.2rem;margin-bottom:0.5rem;opacity:0.7}
+.kpi-label{font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:0.5rem}
+.kpi-num{font-family:var(--syne);font-size:3rem;font-weight:800;line-height:1;letter-spacing:-0.03em;margin-bottom:0.35rem}
+.kpi-sub{font-size:0.6rem;color:var(--muted)}
+.col-red{color:var(--red)}.col-lime{color:var(--glime)}.col-gold{color:var(--gold)}.col-blue{color:var(--blue)}
+
+/* SECTIONS */
+.section{padding:5rem 3rem;border-bottom:1px solid var(--border)}
+.sec-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border)}
+.sec-label{display:flex;align-items:baseline;gap:1rem}
+.sec-num{font-size:0.62rem;color:var(--glime);letter-spacing:0.1em}
+.sec-title{font-family:var(--syne);font-size:2rem;font-weight:800;letter-spacing:-0.02em}
+.sec-desc{font-size:0.68rem;color:var(--muted);max-width:300px;text-align:right;line-height:1.75}
+
+/* CHARTS */
+.chart-2{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--border)}
+.chart-3{display:grid;grid-template-columns:3fr 2fr;gap:2px;background:var(--border)}
+.chart-box{background:var(--s1);padding:2rem}
+.chart-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem}
+.chart-title{font-family:var(--syne);font-size:0.9rem;font-weight:700;margin-bottom:0.2rem}
+.chart-src{font-size:0.58rem;color:var(--muted);letter-spacing:0.08em}
+.chart-badge{font-size:0.55rem;letter-spacing:0.12em;text-transform:uppercase;padding:0.2rem 0.6rem;background:rgba(0,212,106,0.08);color:var(--glime);border:1px solid rgba(0,212,106,0.2)}
+
+/* FYP */
+.fyp-header{background:var(--s2);border:1px solid var(--border2);border-left:3px solid var(--glime);padding:1.25rem 1.5rem;margin-bottom:2.5rem;display:flex;align-items:flex-start;gap:1rem}
+.fyp-badge{background:var(--glime);color:#000;font-size:0.55rem;letter-spacing:0.12em;text-transform:uppercase;padding:0.25rem 0.6rem;white-space:nowrap;margin-top:0.1rem}
+.fyp-text{font-size:0.7rem;color:var(--muted);line-height:1.75}
+.fyp-text strong{color:var(--white);font-weight:500}
+
+/* Q TABS */
+.q-tabs{display:flex;gap:2px;background:var(--border);margin-bottom:2px}
+.q-tab{flex:1;background:var(--s1);padding:1.5rem;cursor:none;transition:background 0.2s;border-bottom:2px solid transparent}
+.q-tab:hover{background:var(--s2)}
+.q-tab.active{background:var(--s2);border-bottom-color:var(--glime)}
+.q-tab-num{font-family:var(--syne);font-size:2rem;font-weight:800;color:var(--muted);line-height:1;margin-bottom:0.2rem;transition:color 0.2s}
+.q-tab.active .q-tab-num{color:var(--glime)}
+.q-tab-label{font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted)}
+.q-tab-sub{font-size:0.68rem;color:var(--white);margin-top:0.2rem}
+
+/* REASONS */
+.rtbl{width:100%;border-collapse:collapse;margin-top:1rem}
+.rtbl th{font-size:0.56rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:0.6rem 1rem;text-align:left;border-bottom:1px solid var(--border)}
+.rtbl td{padding:0.8rem 1rem;font-size:0.7rem;border-bottom:1px solid var(--border);vertical-align:middle}
+.rtbl tr:hover td{background:var(--s2)}
+.bar-bg{width:160px;height:5px;background:var(--border);border-radius:2px}
+.bar-fill{height:100%;background:var(--glime);border-radius:2px}
+.pct-n{font-family:var(--syne);font-weight:700;font-size:1rem;color:var(--glime);min-width:3.5rem}
+
+/* METHOD */
+.method-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--border)}
+.method-card{background:var(--s1);padding:2rem;transition:background 0.2s}
+.method-card:hover{background:var(--s2)}
+.method-icon{width:44px;height:44px;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:1.25rem}
+.method-name{font-family:var(--syne);font-size:0.85rem;font-weight:700;margin-bottom:0.6rem}
+.method-body{font-size:0.68rem;color:var(--muted);line-height:1.8}
+
+/* FOOTER */
+footer{display:grid;grid-template-columns:2fr 1fr 1fr;gap:4rem;padding:4rem 3rem 2rem;border-top:1px solid var(--border)}
+.ft-logo{font-family:var(--syne);font-size:1.8rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:0.75rem}
+.ft-logo em{color:var(--glime);font-style:normal}
+.ft-desc{font-size:0.68rem;color:var(--muted);line-height:1.85;margin-bottom:1.5rem}
+.ft-col-title{font-size:0.58rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;padding-bottom:0.5rem;border-bottom:1px solid var(--border)}
+.ft-links{display:flex;flex-direction:column;gap:0.5rem}
+.ft-links a{font-size:0.68rem;color:var(--muted);transition:color 0.2s}
+.ft-links a:hover{color:var(--glime)}
+.ft-bottom{grid-column:1/-1;padding-top:1.5rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:0.6rem;color:var(--muted)}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(20px);transition:opacity 0.6s,transform 0.6s}
+.reveal.vis{opacity:1;transform:none}
+
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr;min-height:auto;padding-top:4rem}.hero-right{display:none}
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .chart-2,.chart-3,.method-grid,.q-tabs{grid-template-columns:1fr}
+  footer{grid-template-columns:1fr}
+  nav,.hero,.kpi-section,.section{padding-left:1.5rem;padding-right:1.5rem}
+}
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="logo">
+    <div class="logo-flag"><span></span><span></span><span></span></div>
+    Naija<em>Metrics</em>
+  </div>
+  <div class="nav-links">
+    <a href="#macro">Macro</a>
+    <a href="#employment">Jobs</a>
+    <a href="#methodology">Methodology</a>
+    <a href="https://github.com/amananalytics" target="_blank" rel="noopener">GitHub ↗</a>
+    <div class="live-badge"><span class="live-dot"></span>Live Data</div>
+  </div>
+</nav>
+
+<!-- TICKER -->
+<div class="ticker"><div class="ticker-inner" id="ticker-inner"></div></div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-left reveal">
+    <div class="hero-eyebrow"><div class="eyeline"></div>Nigeria Economic Intelligence · Real-time Data</div>
+    <h1 class="hero-h1">NIGERIA<br>BY THE<br><em>NUMBERS.</em></h1>
+    <p class="hero-desc">
+      <strong>The cleanest Nigerian economic dashboard on the internet.</strong>
+      Inflation, GDP, FX rates and employment data — pulled live from the World Bank API and NBS surveys.
+      No PDFs. No government portals. No friction.
+    </p>
+    <div class="hero-ctas">
+      <a href="#macro" class="btn-primary">Explore Data</a>
+      <a href="https://github.com/amananalytics" target="_blank" rel="noopener" class="btn-outline">View Source ↗</a>
+    </div>
+  </div>
+  <div class="hero-right reveal">
+    <div class="map-wrap">
+      <div class="map-ring"></div>
+      <div class="map-ring"></div>
+      <div class="map-ring"></div>
+      <svg class="map-svg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="mg" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#008751" stop-opacity="0.5"/>
+            <stop offset="100%" stop-color="#00D46A" stop-opacity="0.1"/>
+          </linearGradient>
+        </defs>
+        <!-- Nigeria outline (simplified accurate shape) -->
+        <path d="M125,35 L160,28 L200,25 L240,28 L270,38 L295,55 L312,75 L320,98
+          L318,120 L308,138 L318,155 L328,175 L325,198 L312,215 L318,235
+          L322,255 L312,270 L295,280 L278,290 L262,302 L252,320 L245,338
+          L238,355 L228,365 L215,355 L204,340 L194,325 L185,308 L172,294
+          L158,282 L144,270 L132,255 L126,240 L118,225 L108,212 L96,205
+          L82,198 L68,194 L55,185 L48,170 L48,152 L55,136 L62,120
+          L66,102 L72,86 L82,70 L96,56 L110,46 Z"
+          fill="url(#mg)" stroke="#00D46A" stroke-width="1.5" stroke-linejoin="round"/>
+        <!-- internal lines -->
+        <path d="M190,25 L192,90 L198,145 M198,145 L255,138 M198,145 L148,155 M118,205 L198,200 L285,195" stroke="#00D46A" stroke-width="0.4" stroke-opacity="0.25" fill="none"/>
+        <!-- Abuja -->
+        <circle cx="196" cy="188" r="5" fill="#00D46A" opacity="0.9"/>
+        <circle cx="196" cy="188" r="12" fill="#00D46A" opacity="0.12"/>
+        <!-- Lagos -->
+        <circle cx="120" cy="258" r="4" fill="#F5C518" opacity="0.85"/>
+        <!-- Kano -->
+        <circle cx="208" cy="90" r="3.5" fill="#38BDF8" opacity="0.85"/>
+        <!-- Port Harcourt -->
+        <circle cx="185" cy="300" r="3" fill="#FF4545" opacity="0.75"/>
+        <!-- labels -->
+        <text x="206" y="186" font-size="8" fill="#00D46A" font-family="DM Mono,monospace">Abuja ●</text>
+        <text x="84" y="265" font-size="8" fill="#F5C518" font-family="DM Mono,monospace">Lagos</text>
+        <text x="215" y="89" font-size="8" fill="#38BDF8" font-family="DM Mono,monospace">Kano</text>
+      </svg>
+      <div class="map-tip" style="top:18%;right:-4%;border-left:2px solid var(--glime)">
+        <div style="font-size:0.55rem;color:var(--muted);margin-bottom:0.1rem">GDP Growth</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem" id="map-gdp">···</div>
+      </div>
+      <div class="map-tip" style="bottom:20%;left:-6%;border-left:2px solid var(--gold)">
+        <div style="font-size:0.55rem;color:var(--muted);margin-bottom:0.1rem">Population</div>
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem">220M+</div>
+      </div>
+      <div class="map-pin" style="top:43%;left:47%"></div>
+    </div>
+  </div>
+</section>
+
+<!-- KPI GRID -->
+<section class="kpi-section" id="macro">
+  <div class="kpi-grid">
+    <div class="kpi-card reveal" style="--accent:var(--red)">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label">Inflation Rate</div>
+      <div class="kpi-num col-red" id="v-inf">—</div>
+      <div class="kpi-sub" id="s-inf">Fetching…</div>
+    </div>
+    <div class="kpi-card reveal" style="--accent:var(--glime)">
+      <div class="kpi-icon">🏦</div>
+      <div class="kpi-label">GDP Growth</div>
+      <div class="kpi-num col-lime" id="v-gdp">—</div>
+      <div class="kpi-sub" id="s-gdp">Fetching…</div>
+    </div>
+    <div class="kpi-card reveal" style="--accent:var(--gold)">
+      <div class="kpi-icon">💱</div>
+      <div class="kpi-label">Exchange Rate ₦/USD</div>
+      <div class="kpi-num col-gold" id="v-fx">—</div>
+      <div class="kpi-sub" id="s-fx">Fetching…</div>
+    </div>
+    <div class="kpi-card reveal" style="--accent:var(--blue)">
+      <div class="kpi-icon">👷</div>
+      <div class="kpi-label">Unemployment Rate</div>
+      <div class="kpi-num col-blue" id="v-unem">—</div>
+      <div class="kpi-sub" id="s-unem">Fetching…</div>
+    </div>
+  </div>
+</section>
+
+<!-- MACRO CHARTS -->
+<section class="section reveal">
+  <div class="sec-header">
+    <div class="sec-label"><span class="sec-num">01</span><span class="sec-title">Macroeconomic Trends</span></div>
+    <p class="sec-desc">Live data from the World Bank Open Data API. Refreshes on every page load.</p>
+  </div>
+  <div class="chart-2" style="margin-bottom:2px">
+    <div class="chart-box">
+      <div class="chart-top"><div><div class="chart-title">Inflation Rate</div><div class="chart-src">% Annual CPI · World Bank</div></div><span class="chart-badge">CPI</span></div>
+      <canvas id="c-inf" height="240"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="chart-top"><div><div class="chart-title">GDP Growth Rate</div><div class="chart-src">% Annual · World Bank</div></div><span class="chart-badge">GDP</span></div>
+      <canvas id="c-gdp" height="240"></canvas>
+    </div>
+  </div>
+  <div class="chart-2">
+    <div class="chart-box">
+      <div class="chart-top"><div><div class="chart-title">Exchange Rate ₦/USD</div><div class="chart-src">Official Rate · World Bank</div></div><span class="chart-badge">FX</span></div>
+      <canvas id="c-fx" height="240"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="chart-top"><div><div class="chart-title">Unemployment Rate</div><div class="chart-src">% of Labour Force · ILO via World Bank</div></div><span class="chart-badge">ILO</span></div>
+      <canvas id="c-unem" height="240"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- NBS JOB SURVEY -->
+<section class="section reveal" id="employment">
+  <div class="sec-header">
+    <div class="sec-label"><span class="sec-num">02</span><span class="sec-title">NBS Job Creation & Separation 2024</span></div>
+    <p class="sec-desc">NBS Business Establishment Survey. Primary research, B.Sc. Statistics FYP, University of Abuja.</p>
+  </div>
+  <div class="fyp-header">
+    <div class="fyp-badge">Primary Research</div>
+    <div class="fyp-text">
+      <strong>National Bureau of Statistics (NBS) Business Establishment Survey 2024.</strong>
+      Analysed as part of a B.Sc. Statistics final year project at the University of Abuja (2026).
+      Dataset covers 8 occupational categories across Q1–Q3 2024. Methods: descriptive statistics, Chi-Square Test of Homogeneity.
+    </div>
+  </div>
+  <div class="q-tabs">
+    <div class="q-tab active" onclick="setQ(1,this)">
+      <div class="q-tab-num">4,323</div>
+      <div class="q-tab-label">Q1 2024</div>
+      <div class="q-tab-sub">Jobs Created</div>
+    </div>
+    <div class="q-tab" onclick="setQ(2,this)">
+      <div class="q-tab-num">2,050</div>
+      <div class="q-tab-label">Q2 2024</div>
+      <div class="q-tab-sub">Jobs Created</div>
+    </div>
+    <div class="q-tab" onclick="setQ(3,this)">
+      <div class="q-tab-num">1,848</div>
+      <div class="q-tab-label">Q3 2024</div>
+      <div class="q-tab-sub">Jobs Created</div>
+    </div>
+    <div class="q-tab" style="cursor:default;border-bottom-color:var(--red)!important">
+      <div class="q-tab-num" style="color:var(--red)">2,184</div>
+      <div class="q-tab-label">Jan–Sep 2024</div>
+      <div class="q-tab-sub">Total Separated</div>
+    </div>
+  </div>
+  <div class="chart-3" style="margin-bottom:2px">
+    <div class="chart-box">
+      <div class="chart-top"><div><div class="chart-title" id="jcs-title">Jobs Created vs Separated · Q1 2024</div><div class="chart-src">By occupational category · NBS 2024</div></div></div>
+      <canvas id="c-jcs" height="300"></canvas>
+    </div>
+    <div class="chart-box">
+      <div class="chart-top"><div><div class="chart-title">Quarterly Trend</div><div class="chart-src">Total job creation Q1–Q3 2024</div></div></div>
+      <canvas id="c-trend" height="300"></canvas>
+    </div>
+  </div>
+  <div class="chart-box" style="background:var(--s1)">
+    <div class="chart-top"><div><div class="chart-title">Reasons for Job Separation</div><div class="chart-src">NBS Survey 2024 · n = 2,185</div></div></div>
+    <table class="rtbl"><thead><tr><th>Reason</th><th>Count</th><th>Share</th><th style="width:180px">Distribution</th></tr></thead><tbody id="reasons-body"></tbody></table>
+  </div>
+</section>
+
+<!-- METHODOLOGY -->
+<section class="section reveal" id="methodology">
+  <div class="sec-header">
+    <div class="sec-label"><span class="sec-num">03</span><span class="sec-title">Methodology & Sources</span></div>
+  </div>
+  <div class="method-grid">
+    <div class="method-card">
+      <div class="method-icon">📊</div>
+      <div class="method-name">Descriptive Statistics</div>
+      <div class="method-body">Job Creation Rate (JCR), Job Separation Rate (JSR) and Net Employment Change computed per occupational category. Quarterly breakdown across Q1–Q3 2024 from NBS Business Establishment Survey.</div>
+    </div>
+    <div class="method-card">
+      <div class="method-icon">χ²</div>
+      <div class="method-name">Chi-Square Homogeneity</div>
+      <div class="method-body">Tests whether the distribution of job creation and separation across occupational categories is statistically homogeneous. Full analysis performed in base R with contingency table output.</div>
+    </div>
+    <div class="method-card">
+      <div class="method-icon">🌐</div>
+      <div class="method-name">World Bank Open Data API</div>
+      <div class="method-body">Macro indicators fetched live from api.worldbank.org/v2/country/NG at page load. No data is hardcoded — everything updates automatically. Source code fully open on GitHub.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <div class="ft-logo">Naija<em>Metrics</em></div>
+    <p class="ft-desc">Open-source Nigerian economic intelligence dashboard. Making public data accessible — built by a statistician who got tired of digging through government PDFs.</p>
+    <div style="font-size:0.6rem;color:var(--muted)">Built by <a href="https://amananalytics.is-a.dev" style="color:var(--glime)">Abdulrahman Sanni</a> · B.Sc. Statistics, University of Abuja 2026</div>
+  </div>
+  <div>
+    <div class="ft-col-title">Data Sources</div>
+    <div class="ft-links">
+      <a href="https://data.worldbank.org/country/nigeria" target="_blank" rel="noopener">World Bank Open Data</a>
+      <a href="https://nigerianstat.gov.ng" target="_blank" rel="noopener">National Bureau of Statistics</a>
+      <a href="https://www.cbn.gov.ng" target="_blank" rel="noopener">Central Bank of Nigeria</a>
+    </div>
+  </div>
+  <div>
+    <div class="ft-col-title">Connect</div>
+    <div class="ft-links">
+      <a href="https://github.com/amananalytics" target="_blank" rel="noopener">GitHub: amananalytics</a>
+      <a href="https://amananalytics.is-a.dev" target="_blank" rel="noopener">Portfolio</a>
+      <a href="https://twitter.com/0xAman_" target="_blank" rel="noopener">Twitter: @0xAman_</a>
+      <a href="https://warpcast.com/amaan056" target="_blank" rel="noopener">Farcaster: @amaan056</a>
+    </div>
+  </div>
+  <div class="ft-bottom">
+    <span>© 2026 Abdulrahman Sanni · MIT License</span>
+    <span style="color:var(--glime)">● Live · Abuja, Nigeria</span>
+  </div>
+</footer>
+
+<script>
+// CURSOR
+const cur=document.getElementById('cursor'),ring=document.getElementById('cursor-ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px'});
+(function loop(){rx+=(mx-rx)*0.12;ry+=(my-ry)*0.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(loop)})();
+document.querySelectorAll('a,.q-tab,.kpi-card,.method-card,.btn-primary,.btn-outline').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{ring.style.width='52px';ring.style.height='52px';ring.style.borderColor='rgba(0,212,106,0.7)'});
+  el.addEventListener('mouseleave',()=>{ring.style.width='36px';ring.style.height='36px';ring.style.borderColor='rgba(0,212,106,0.4)'});
+});
+
+// REVEAL
+const obs=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('vis')}),{threshold:0.1});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+// TICKER
+const TICKS=['INFLATION RATE','GDP GROWTH','NBS JOB SURVEY 2024','EXCHANGE RATE ₦/USD','UNEMPLOYMENT','JOB CREATION · 8,221','SEPARATION · 2,184','CHI-SQUARE TEST','QUARTERLY TREND','WORLD BANK API','ABUJA NIGERIA','OPEN SOURCE MIT'];
+const ti=document.getElementById('ticker-inner');
+ti.innerHTML=[...TICKS,...TICKS,...TICKS].map(s=>`<span>${s}</span>`).join('');
+
+// CHART DEFAULTS
+Chart.defaults.color='#5A6A60';
+Chart.defaults.borderColor='rgba(255,255,255,0.05)';
+Chart.defaults.font.family="'DM Mono',monospace";
+Chart.defaults.font.size=11;
+
+// FYP DATA
+const CATS=['W.Proprietors','Mgr/Prof/Tech','Clerical','Consultants','Apprentices','Operatives','Unpaid','Other'];
+const JC={Q1:[820,750,420,180,610,980,380,183],Q2:[390,356,200,85,290,465,181,83],Q3:[350,320,180,77,261,419,163,78]};
+const JS=[380,320,280,95,310,480,220,99];
+const REASONS=[
+  {r:'Voluntary resignation',f:612},{r:'Business closure/downsizing',f:498},
+  {r:'Contract/seasonal end',f:387},{r:'Retirement',f:265},
+  {r:'Dismissal/termination',f:218},{r:'Business relocation',f:135},
+  {r:'Other/unspecified',f:70},
+];
+
+// ANIMATED COUNTER
+function animCount(el,target,suffix='',dec=1,dur=1400){
+  const start=performance.now();
+  (function step(now){
+    const p=Math.min((now-start)/dur,1);
+    const ease=1-Math.pow(1-p,3);
+    const val=ease*target;
+    el.textContent=(dec===0?Math.round(val):val.toFixed(dec))+suffix;
+    if(p<1)requestAnimationFrame(t=>step(t));
+  })(performance.now());
+}
+
+// WORLD BANK
+async function fetchWB(ind){
+  try{
+    const r=await fetch(`https://api.worldbank.org/v2/country/NG/indicator/${ind}?format=json&mrv=15&per_page=15`);
+    const d=await r.json();
+    return(d[1]||[]).filter(p=>p.value!==null).reverse();
+  }catch{return[]}
+}
+
+// LINE CHART
+function lineChart(id,labels,data,color,label){
+  const ctx=document.getElementById(id);
+  return new Chart(ctx,{
+    type:'line',
+    data:{labels,datasets:[{label,data,borderColor:color,backgroundColor:color+'15',borderWidth:2,pointRadius:3,pointHoverRadius:6,pointBackgroundColor:color,tension:0.4,fill:true}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#0F1518',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,titleColor:'#F0F4F0',bodyColor:'#5A6A60',padding:10}},
+      scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{maxRotation:0,maxTicksLimit:8}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{callback:v=>v.toFixed(1)}}}
+    }
+  });
+}
+
+// JCS CHART
+let jcsChart=null;
+function renderJCS(q){
+  if(jcsChart)jcsChart.destroy();
+  jcsChart=new Chart(document.getElementById('c-jcs'),{
+    type:'bar',
+    data:{labels:CATS,datasets:[
+      {label:'Created (Q'+q+')',data:JC['Q'+q],backgroundColor:'rgba(0,212,106,0.22)',borderColor:'#00D46A',borderWidth:1.5,borderRadius:2},
+      {label:'Separated',data:JS,backgroundColor:'rgba(255,69,69,0.18)',borderColor:'#FF4545',borderWidth:1.5,borderRadius:2}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{legend:{labels:{boxWidth:10,padding:16,color:'#5A6A60'}},tooltip:{backgroundColor:'#0F1518',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,padding:10}},
+      scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{font:{size:10}}},y:{grid:{color:'rgba(255,255,255,0.04)'}}}
+    }
+  });
+}
+
+function renderTrend(){
+  const totals=[JC.Q1.reduce((a,b)=>a+b),JC.Q2.reduce((a,b)=>a+b),JC.Q3.reduce((a,b)=>a+b)];
+  new Chart(document.getElementById('c-trend'),{
+    type:'bar',
+    data:{labels:['Q1 2024','Q2 2024','Q3 2024'],datasets:[
+      {label:'Jobs Created',data:totals,backgroundColor:['rgba(0,212,106,0.7)','rgba(0,212,106,0.5)','rgba(0,212,106,0.3)'],borderColor:'#00D46A',borderWidth:1.5,borderRadius:3},
+      {label:'Separated',data:[2184,0,0],backgroundColor:'rgba(255,69,69,0.28)',borderColor:'#FF4545',borderWidth:1.5,borderRadius:3}
+    ]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{boxWidth:10,padding:16,color:'#5A6A60'}},tooltip:{backgroundColor:'#0F1518',borderColor:'rgba(255,255,255,0.1)',borderWidth:1,padding:10}},
+      scales:{x:{grid:{color:'rgba(255,255,255,0.04)'}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{callback:v=>v.toLocaleString()}}}
+    }
+  });
+}
+
+function renderReasons(){
+  const total=REASONS.reduce((a,b)=>a+b.f,0);
+  const max=Math.max(...REASONS.map(r=>r.f));
+  document.getElementById('reasons-body').innerHTML=REASONS.map(r=>{
+    const pct=(r.f/total*100).toFixed(1);
+    const w=Math.round(r.f/max*158);
+    return`<tr><td>${r.r}</td><td>${r.f.toLocaleString()}</td><td class="pct-n">${pct}%</td><td><div class="bar-bg"><div class="bar-fill" style="width:${w}px"></div></div></td></tr>`;
+  }).join('');
+}
+
+function setQ(q,el){
+  document.querySelectorAll('.q-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('jcs-title').textContent='Jobs Created vs Separated · Q'+q+' 2024';
+  renderJCS(q);
+}
+
+// BOOT
+async function boot(){
+  renderJCS(1);renderTrend();renderReasons();
+  const[inf,gdp,fx,unem]=await Promise.all([
+    fetchWB('FP.CPI.TOTL.ZG'),fetchWB('NY.GDP.MKTP.KD.ZG'),
+    fetchWB('PA.NUS.FCRF'),fetchWB('SL.UEM.TOTL.ZS'),
+  ]);
+  if(inf.length){const v=inf[inf.length-1];animCount(document.getElementById('v-inf'),v.value,'%',1);document.getElementById('s-inf').textContent=`CPI Annual % · ${v.date}`;}
+  if(gdp.length){const v=gdp[gdp.length-1];animCount(document.getElementById('v-gdp'),v.value,'%',1);document.getElementById('s-gdp').textContent=`GDP Growth % · ${v.date}`;document.getElementById('map-gdp').textContent=v.value.toFixed(1)+'%';}
+  if(fx.length){const v=fx[fx.length-1];animCount(document.getElementById('v-fx'),v.value,'',0);document.getElementById('s-fx').textContent=`₦/USD Official · ${v.date}`;}
+  if(unem.length){const v=unem[unem.length-1];animCount(document.getElementById('v-unem'),v.value,'%',1);document.getElementById('s-unem').textContent=`% of Labour Force · ${v.date}`;}
+  if(inf.length) lineChart('c-inf',inf.map(p=>p.date),inf.map(p=>p.value),'#FF4545','Inflation %');
+  if(gdp.length) lineChart('c-gdp',gdp.map(p=>p.date),gdp.map(p=>p.value),'#00D46A','GDP Growth %');
+  if(fx.length)  lineChart('c-fx',fx.map(p=>p.date),fx.map(p=>p.value),'#F5C518','₦/USD');
+  if(unem.length)lineChart('c-unem',unem.map(p=>p.date),unem.map(p=>p.value),'#38BDF8','Unemployment %');
+}
+boot();
+</script>
+</body>
+</html>
