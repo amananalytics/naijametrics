@@ -4,25 +4,25 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>NaijaMetrics — Nigeria Economic Intelligence</title>
-<meta name="description" content="A clean public dashboard for Nigeria's current economic readings: FX, inflation, GDP, unemployment, policy rate, reserves, and crude output." />
+<meta name="description" content="Nigeria economic intelligence dashboard with live macro data, FX tracking, and NBS research." />
 <meta property="og:title" content="NaijaMetrics — Nigeria Economic Intelligence" />
-<meta property="og:description" content="Live Nigerian economic readings, refreshed automatically from public sources." />
+<meta property="og:description" content="Live Nigerian economic data. Inflation, GDP, FX, employment." />
 <meta name="theme-color" content="#05080A" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
 <style>
 :root{
   --bg:#05080A;
   --bg2:#091014;
-  --panel:#0D1418;
-  --panel2:#111A20;
-  --panel3:#16222A;
+  --panel:#0D1317;
+  --panel2:#111920;
+  --panel3:#151F26;
   --text:#F4F8F6;
-  --muted:#728188;
+  --muted:#6B7B82;
   --border:rgba(255,255,255,0.08);
   --border2:rgba(255,255,255,0.14);
   --accent:#00D46A;
@@ -32,18 +32,19 @@
   --info:#38BDF8;
   --good:#22C55E;
   --bad:#EF4444;
+  --mono:'IBM Plex Mono',monospace;
   --body:'Inter',system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
   --heading:'Space Grotesk',var(--body);
 }
 
 html[data-theme="light"]{
   --bg:#F5F7F8;
-  --bg2:#EDF2F4;
+  --bg2:#EEF3F4;
   --panel:#FFFFFF;
-  --panel2:#F8FBFC;
-  --panel3:#EEF4F6;
+  --panel2:#F8FAFB;
+  --panel3:#F2F6F8;
   --text:#0B1114;
-  --muted:#63727A;
+  --muted:#60707A;
   --border:rgba(15,23,42,0.08);
   --border2:rgba(15,23,42,0.14);
   --accent:#0B8F4C;
@@ -55,26 +56,29 @@ html[data-theme="light"]{
   --bad:#DC2626;
 }
 
-*{box-sizing:border-box}
+*,
+*::before,
+*::after{box-sizing:border-box}
+
 html{scroll-behavior:smooth}
 body{
   margin:0;
-  font-family:var(--body);
-  color:var(--text);
   background:
-    radial-gradient(1200px 680px at 15% -10%, rgba(0,212,106,.08), transparent 55%),
-    radial-gradient(900px 600px at 100% 0%, rgba(56,189,248,.05), transparent 50%),
+    radial-gradient(1200px 700px at 20% -10%, rgba(0,212,106,0.08), transparent 55%),
+    radial-gradient(900px 600px at 100% 0%, rgba(56,189,248,0.06), transparent 50%),
     linear-gradient(180deg,var(--bg),var(--bg2));
+  color:var(--text);
+  font-family:var(--body);
   overflow-x:hidden;
 }
+
 a{color:inherit;text-decoration:none}
-button{font:inherit}
-canvas{display:block;max-width:100%}
+button,input{font:inherit}
 img,svg{display:block;max-width:100%}
 
 @media (pointer:fine){
   body{cursor:none}
-  a,button,.tab,.theme-btn,.refresh-btn,.metric-btn,.chip{cursor:none}
+  a,button,.tab,.theme-toggle,.refresh-btn,.range-btn,.chip{cursor:none}
 }
 
 #cursor,
@@ -97,35 +101,37 @@ img,svg{display:block;max-width:100%}
 #cursor-ring{
   width:34px;
   height:34px;
+  border:1px solid rgba(0,212,106,0.35);
   border-radius:50%;
-  border:1px solid rgba(0,212,106,.35);
   transition:width .16s ease,height .16s ease,border-color .16s ease;
 }
+
 @media (pointer:fine){
   #cursor,#cursor-ring{display:block}
 }
 
 .shell{
-  width:min(1400px, calc(100% - 1.5rem));
+  width:min(1400px, calc(100% - 2rem));
   margin:0 auto;
-  padding:1rem 0 2.25rem;
+  padding:1rem 0 3rem;
 }
 
 .topbar{
   position:sticky;
-  top:.75rem;
-  z-index:60;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:1rem;
-  padding:.95rem 1.05rem;
+  top:0.75rem;
+  z-index:50;
+  backdrop-filter:blur(18px);
+  background:color-mix(in srgb, var(--panel) 84%, transparent);
   border:1px solid var(--border);
   border-radius:22px;
-  background:color-mix(in srgb, var(--panel) 86%, transparent);
-  backdrop-filter:blur(18px);
-  box-shadow:0 18px 55px rgba(0,0,0,.16);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
+  padding:0.95rem 1.1rem;
+  box-shadow:0 18px 55px rgba(0,0,0,0.18);
 }
+
 .brand{
   display:flex;
   align-items:center;
@@ -133,26 +139,24 @@ img,svg{display:block;max-width:100%}
   min-width:0;
 }
 .flag{
-  width:30px;height:20px;border-radius:6px;overflow:hidden;
-  display:grid;grid-template-columns:1fr 1fr 1fr;
+  width:30px;height:20px;border-radius:6px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr 1fr;flex:none;
   border:1px solid var(--border2);
-  flex:none;
 }
 .flag span:nth-child(1){background:#008751}
-.flag span:nth-child(2){background:#fff}
-.flag span:nth-child(3){background:#000}
+.flag span:nth-child(2){background:#FFFFFF}
+.flag span:nth-child(3){background:#000000}
 .brand h1{
-  margin:0;
   font-family:var(--heading);
   font-size:1.05rem;
-  letter-spacing:-.03em;
+  margin:0;
+  letter-spacing:-0.03em;
 }
 .brand h1 em{font-style:normal;color:var(--accent)}
 
 .nav{
   display:flex;
   align-items:center;
-  gap:.75rem;
+  gap:.9rem;
   flex-wrap:wrap;
   justify-content:flex-end;
 }
@@ -170,8 +174,8 @@ img,svg{display:block;max-width:100%}
   gap:.45rem;
   padding:.42rem .75rem;
   border-radius:999px;
-  background:rgba(0,212,106,.08);
-  border:1px solid rgba(0,212,106,.18);
+  background:rgba(0,212,106,0.08);
+  border:1px solid rgba(0,212,106,0.18);
   color:var(--accent);
   font-size:.65rem;
   letter-spacing:.12em;
@@ -179,35 +183,30 @@ img,svg{display:block;max-width:100%}
   white-space:nowrap;
 }
 .dot{
-  width:7px;height:7px;border-radius:50%;
-  background:var(--accent);
-  box-shadow:0 0 0 0 rgba(0,212,106,.4);
-  animation:pulse 2s infinite;
+  width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 rgba(0,212,106,.4);animation:pulse 2s infinite;
 }
-@keyframes pulse{
-  0%{box-shadow:0 0 0 0 rgba(0,212,106,.4)}
-  70%{box-shadow:0 0 0 10px transparent}
-  100%{box-shadow:0 0 0 0 transparent}
-}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,212,106,.4)}70%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
 
-.theme-btn,.refresh-btn{
+.theme-toggle,.refresh-btn{
   border:1px solid var(--border2);
   background:var(--panel2);
   color:var(--text);
   border-radius:14px;
-  padding:.72rem .9rem;
+  padding:.7rem .9rem;
   transition:transform .18s ease,border-color .18s ease,background .18s ease;
 }
-.theme-btn:hover,.refresh-btn:hover{transform:translateY(-1px);border-color:var(--accent)}
+.theme-toggle:hover,.refresh-btn:hover{transform:translateY(-1px);border-color:var(--accent)}
+.theme-toggle{min-width:108px}
 .refresh-btn{display:inline-flex;align-items:center;gap:.55rem}
 
 .hero{
   padding:1.35rem 0 1rem;
   display:grid;
-  grid-template-columns:minmax(0,1.3fr) minmax(300px,.95fr);
-  gap:1.2rem;
+  grid-template-columns:minmax(0,1.4fr) minmax(300px,.9fr);
+  gap:1.25rem;
   align-items:stretch;
 }
+
 .card{
   background:linear-gradient(180deg, color-mix(in srgb, var(--panel) 98%, transparent), color-mix(in srgb, var(--panel2) 100%, transparent));
   border:1px solid var(--border);
@@ -223,32 +222,31 @@ img,svg{display:block;max-width:100%}
 .hero-main::after{
   content:'';
   position:absolute;
-  right:-10%;
-  bottom:-30%;
+  inset:auto -10% -35% auto;
   width:420px;
   height:420px;
   border-radius:50%;
-  background:radial-gradient(circle, rgba(0,212,106,.12), transparent 62%);
+  background:radial-gradient(circle, rgba(0,212,106,0.12), transparent 63%);
   pointer-events:none;
 }
 .kicker{
   display:flex;
   align-items:center;
   gap:.8rem;
-  margin-bottom:1rem;
-  color:var(--muted);
   font-size:.68rem;
-  text-transform:uppercase;
   letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:1rem;
 }
 .kicker .line{width:2.8rem;height:1px;background:var(--accent)}
 .hero h2{
   margin:0;
   max-width:11ch;
   font-family:var(--heading);
-  font-size:clamp(3.2rem, 7vw, 6rem);
+  font-size:clamp(3.3rem, 7vw, 6.2rem);
   line-height:.9;
-  letter-spacing:-.05em;
+  letter-spacing:-0.05em;
 }
 .hero h2 em{
   font-style:normal;
@@ -256,19 +254,20 @@ img,svg{display:block;max-width:100%}
   -webkit-text-stroke:1px var(--accent);
 }
 .hero p{
-  max-width:64ch;
-  margin:1.15rem 0 1.4rem;
+  max-width:60ch;
   color:var(--muted);
-  line-height:1.85;
-  font-size:.93rem;
+  line-height:1.9;
+  margin:1.25rem 0 1.6rem;
+  font-size:.92rem;
 }
 .hero-actions{
   display:flex;
-  gap:.8rem;
+  gap:.85rem;
   flex-wrap:wrap;
-  margin-bottom:1.2rem;
+  align-items:center;
+  margin-bottom:1.4rem;
 }
-.btn-primary,.btn-ghost,.pill,.tab,.metric-btn,.chip{
+.btn-primary,.btn-ghost,.chip,.range-btn{
   border-radius:14px;
   transition:transform .18s ease, background .18s ease, border-color .18s ease, color .18s ease;
 }
@@ -286,30 +285,21 @@ img,svg{display:block;max-width:100%}
   color:var(--text);
   padding:.88rem 1.2rem;
 }
-.btn-ghost:hover{
-  transform:translateY(-1px);
-  border-color:var(--accent);
-  background:rgba(0,212,106,.04);
-}
+.btn-ghost:hover{transform:translateY(-1px);border-color:var(--accent);background:color-mix(in srgb, var(--panel2) 80%, transparent)}
+
 .hero-meta{
   display:flex;
   gap:.6rem;
   flex-wrap:wrap;
 }
-.pill{
+.chip{
   padding:.45rem .7rem;
   background:var(--panel2);
   border:1px solid var(--border);
-  color:var(--muted);
   font-size:.67rem;
+  color:var(--muted);
   letter-spacing:.06em;
 }
-.status-line{
-  margin-top:1rem;
-  font-size:.72rem;
-  color:var(--muted);
-}
-
 .hero-side{
   padding:1.2rem;
   display:grid;
@@ -320,6 +310,31 @@ img,svg{display:block;max-width:100%}
   border:1px solid var(--border);
   border-radius:22px;
   padding:1rem;
+}
+.side-feed{
+  display:grid;
+  gap:.7rem;
+}
+.feed-row{
+  display:flex;
+  justify-content:space-between;
+  gap:1rem;
+  align-items:center;
+  padding:.68rem .75rem;
+  border-radius:16px;
+  background:color-mix(in srgb, var(--panel) 88%, transparent);
+  border:1px solid var(--border);
+}
+.feed-row span{
+  font-size:.66rem;
+  text-transform:uppercase;
+  letter-spacing:.13em;
+  color:var(--muted);
+}
+.feed-row strong{
+  font-family:var(--heading);
+  font-size:1rem;
+  letter-spacing:-0.03em;
 }
 .map-box{
   width:100%;
@@ -332,7 +347,7 @@ img,svg{display:block;max-width:100%}
   position:absolute;
   inset:0;
   border-radius:50%;
-  border:1px solid rgba(0,212,106,.12);
+  border:1px solid rgba(0,212,106,0.12);
   animation:ring 4s ease-in-out infinite;
 }
 .map-ring:nth-child(2){inset:14%;animation-delay:.6s}
@@ -350,46 +365,23 @@ img,svg{display:block;max-width:100%}
   box-shadow:0 0 0 0 rgba(0,212,106,.55);
   animation:pulse 2s infinite;
 }
-.feed-row{
-  display:flex;
-  justify-content:space-between;
-  gap:1rem;
-  align-items:center;
-  padding:.68rem .75rem;
-  border-radius:16px;
-  background:color-mix(in srgb, var(--panel) 90%, transparent);
-  border:1px solid var(--border);
-  margin-bottom:.7rem;
-}
-.feed-row span{
-  font-size:.66rem;
-  text-transform:uppercase;
-  letter-spacing:.13em;
-  color:var(--muted);
-}
-.feed-row strong{
-  font-family:var(--heading);
-  font-size:1rem;
-  letter-spacing:-.03em;
-}
 
 .grid{
   display:grid;
   gap:1rem;
 }
 .stats{
-  grid-template-columns:repeat(7,minmax(0,1fr));
+  grid-template-columns:repeat(4, minmax(0,1fr));
   margin-top:1rem;
 }
 .stat{
-  padding:1.2rem;
+  padding:1.25rem;
   position:relative;
   overflow:hidden;
 }
 .stat::before{
   content:'';
-  position:absolute;
-  left:0;top:0;width:100%;height:2px;
+  position:absolute;left:0;top:0;width:100%;height:2px;
   background:var(--accent);
   transform:scaleX(0);
   transform-origin:left;
@@ -402,19 +394,19 @@ img,svg{display:block;max-width:100%}
   text-transform:uppercase;
   letter-spacing:.18em;
   color:var(--muted);
-  margin-bottom:.45rem;
+  margin-bottom:.55rem;
 }
 .value{
   font-family:var(--heading);
-  font-size:clamp(1.7rem, 2.8vw, 2.8rem);
+  font-size:clamp(2rem, 4vw, 3.2rem);
   line-height:1;
-  letter-spacing:-.05em;
+  letter-spacing:-0.05em;
   margin-bottom:.2rem;
 }
 .sub{
   color:var(--muted);
   font-size:.72rem;
-  line-height:1.5;
+  line-height:1.6;
   min-height:2.4em;
 }
 .up{color:var(--good)}
@@ -435,12 +427,12 @@ img,svg{display:block;max-width:100%}
 .section-title{
   margin:0;
   font-family:var(--heading);
-  font-size:clamp(1.35rem, 3vw, 2.05rem);
-  letter-spacing:-.04em;
+  font-size:clamp(1.4rem, 3vw, 2.15rem);
+  letter-spacing:-0.04em;
 }
 .section-desc{
   margin:0;
-  max-width:56ch;
+  max-width:48ch;
   color:var(--muted);
   font-size:.84rem;
   line-height:1.75;
@@ -460,21 +452,16 @@ img,svg{display:block;max-width:100%}
   flex-wrap:wrap;
   gap:.55rem;
 }
-.metric-btn{
+.range-btn{
   border:1px solid var(--border2);
   background:var(--panel2);
   color:var(--muted);
-  padding:.62rem .92rem;
+  padding:.62rem .9rem;
   letter-spacing:.12em;
   text-transform:uppercase;
   font-size:.62rem;
 }
-.metric-btn:hover{
-  border-color:var(--accent);
-  color:var(--text);
-  background:var(--panel3);
-}
-.metric-btn.active{
+.range-btn.active{
   color:var(--accent);
   border-color:rgba(0,212,106,.28);
   background:rgba(0,212,106,.08);
@@ -485,6 +472,16 @@ img,svg{display:block;max-width:100%}
   line-height:1.5;
 }
 
+.chart-grid-2{
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:1rem;
+}
+.chart-grid-3{
+  display:grid;
+  grid-template-columns:minmax(0,1.35fr) minmax(0,.95fr);
+  gap:1rem;
+}
 .chart-card{
   padding:1.15rem;
 }
@@ -499,7 +496,7 @@ img,svg{display:block;max-width:100%}
   margin:0;
   font-family:var(--heading);
   font-size:1rem;
-  letter-spacing:-.03em;
+  letter-spacing:-0.03em;
 }
 .chart-src{
   color:var(--muted);
@@ -519,7 +516,10 @@ img,svg{display:block;max-width:100%}
   background:rgba(0,212,106,.08);
   white-space:nowrap;
 }
-.canvas-wrap{height:340px}
+.canvas-wrap{
+  height:280px;
+}
+.canvas-wrap.tall{height:330px}
 canvas{width:100% !important;height:100% !important}
 .insight{
   margin-top:.9rem;
@@ -529,7 +529,99 @@ canvas{width:100% !important;height:100% !important}
 }
 .insight strong{color:var(--text)}
 
-.columns-3{
+.fx-hero{
+  display:grid;
+  grid-template-columns:1.05fr .95fr;
+  gap:1rem;
+  align-items:stretch;
+}
+.rate-box{
+  padding:1.25rem;
+  display:grid;
+  gap:.9rem;
+}
+.rate-big{
+  font-family:var(--heading);
+  font-size:clamp(2.2rem, 5vw, 4rem);
+  line-height:1;
+  letter-spacing:-0.06em;
+}
+.rate-mini{
+  display:flex;
+  gap:.65rem;
+  flex-wrap:wrap;
+}
+.mini-pill{
+  padding:.42rem .62rem;
+  border-radius:999px;
+  font-size:.66rem;
+  border:1px solid var(--border);
+  color:var(--muted);
+  background:var(--panel2);
+}
+
+.q-tabs{
+  display:grid;
+  grid-template-columns:repeat(4, minmax(0,1fr));
+  gap:1rem;
+  margin-bottom:1rem;
+}
+.tab{
+  padding:1rem;
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-radius:20px;
+  transition:transform .18s ease,border-color .18s ease,background .18s ease;
+}
+.tab:hover{transform:translateY(-1px);border-color:rgba(0,212,106,.25)}
+.tab.active{
+  background:rgba(0,212,106,.07);
+  border-color:rgba(0,212,106,.22);
+}
+.tab .big{
+  font-family:var(--heading);
+  font-size:1.8rem;
+  line-height:1;
+  margin-bottom:.2rem;
+}
+.tab .small{
+  color:var(--muted);
+  font-size:.66rem;
+  text-transform:uppercase;
+  letter-spacing:.14em;
+}
+.tab .desc{
+  color:var(--text);
+  font-size:.76rem;
+  margin-top:.3rem;
+}
+
+.table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:.8rem;
+}
+.table th,.table td{
+  border-bottom:1px solid var(--border);
+  text-align:left;
+  padding:.85rem .7rem;
+  font-size:.76rem;
+}
+.table th{
+  color:var(--muted);
+  font-size:.6rem;
+  text-transform:uppercase;
+  letter-spacing:.16em;
+}
+.table tr:hover td{background:color-mix(in srgb, var(--panel2) 84%, transparent)}
+.bar{
+  width:170px;height:6px;border-radius:999px;background:var(--border);overflow:hidden
+}
+.bar > span{
+  display:block;height:100%;border-radius:999px;background:var(--accent)
+}
+
+.methods{
   display:grid;
   grid-template-columns:repeat(3,minmax(0,1fr));
   gap:1rem;
@@ -537,7 +629,7 @@ canvas{width:100% !important;height:100% !important}
 .method{
   padding:1.2rem;
 }
-.micon{
+.method .micon{
   width:42px;height:42px;border-radius:14px;
   display:grid;place-items:center;
   background:var(--panel2);
@@ -564,7 +656,7 @@ canvas{width:100% !important;height:100% !important}
 }
 .footer-grid{
   display:grid;
-  grid-template-columns:1.2fr 1fr 1fr;
+  grid-template-columns:1.4fr 1fr 1fr;
   gap:1rem;
 }
 .footer h4{
@@ -600,21 +692,31 @@ canvas{width:100% !important;height:100% !important}
   transform:none;
 }
 
-@media (max-width:1220px){
+.loading{
+  font-size:.72rem;
+  color:var(--muted);
+}
+
+@media (max-width:1100px){
   .hero{grid-template-columns:1fr}
   .hero-side{display:none}
-  .stats{grid-template-columns:repeat(4,minmax(0,1fr))}
-  .columns-3,.footer-grid{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .chart-grid-2,.chart-grid-3,.fx-hero,.methods,.footer-grid{grid-template-columns:1fr}
+  .q-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}
   .section-head{flex-direction:column}
   .section-desc{text-align:left;max-width:none}
 }
-@media (max-width:760px){
+
+@media (max-width:720px){
   .shell{width:min(100% - 1rem, 1400px)}
   .topbar,.hero-main,.section,.footer{padding:1rem}
   .nav{gap:.55rem}
-  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .canvas-wrap{height:270px}
+  .stats{grid-template-columns:1fr}
+  .q-tabs{grid-template-columns:1fr}
+  .canvas-wrap,.canvas-wrap.tall{height:250px}
+  .bar{width:120px}
 }
+
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   *,*::before,*::after{
@@ -625,7 +727,6 @@ canvas{width:100% !important;height:100% !important}
 </style>
 </head>
 <body>
-
 <div id="cursor"></div>
 <div id="cursor-ring"></div>
 
@@ -636,35 +737,35 @@ canvas{width:100% !important;height:100% !important}
       <h1>Naija<em>Metrics</em></h1>
     </div>
     <nav class="nav">
-      <a href="#snapshot">Snapshot</a>
-      <a href="#trend">Trend</a>
-      <a href="#sources">Sources</a>
+      <a href="#macro">Macro</a>
+      <a href="#fx">FX</a>
+      <a href="#employment">Jobs</a>
+      <a href="#methodology">Method</a>
       <span class="live-pill"><span class="dot"></span><span id="liveLabel">Live sync</span></span>
-      <button class="theme-btn" id="themeBtn" type="button">☾ Dark</button>
+      <button class="theme-toggle" id="themeBtn" type="button">☾ Dark</button>
       <button class="refresh-btn" id="refreshBtn" type="button">↻ Refresh</button>
     </nav>
   </header>
 
   <section class="hero">
     <div class="hero-main card reveal">
-      <div class="kicker"><span class="line"></span> Nigeria economic readings · auto refresh</div>
+      <div class="kicker"><span class="line"></span> Nigeria Economic Intelligence · auto refresh</div>
       <h2>NIGERIA<br>BY THE<br><em>NUMBERS.</em></h2>
       <p>
-        A straightforward dashboard for a quick read on Nigeria’s macro picture.
-        It shows the latest public readings for the naira, inflation, policy rate, reserves, crude output, GDP, and unemployment.
-        The page refreshes automatically and keeps the last reading if a source is slow.
+        A cleaner way to read Nigeria’s macro picture: inflation, GDP growth, unemployment, and live FX,
+        all pulled from public APIs and refreshed automatically inside one fast dashboard.
       </p>
       <div class="hero-actions">
-        <a class="btn-primary" href="#snapshot">Open dashboard</a>
+        <a class="btn-primary" href="#macro">Explore dashboard</a>
         <a class="btn-ghost" href="https://github.com/amananalytics" target="_blank" rel="noopener">View source ↗</a>
       </div>
       <div class="hero-meta">
-        <span class="pill">Public data</span>
-        <span class="pill">Dark / light mode</span>
-        <span class="pill">Auto refresh</span>
-        <span class="pill">Cached fallback</span>
+        <span class="chip">World Bank macro series</span>
+        <span class="chip">Frankfurter FX feed</span>
+        <span class="chip">Dark / Light mode</span>
+        <span class="chip">GitHub Pages friendly</span>
       </div>
-      <div class="status-line" id="statusLine">Loading current readings…</div>
+      <div class="loading" id="statusLine" style="margin-top:1rem">Loading live data…</div>
     </div>
 
     <div class="hero-side reveal">
@@ -693,9 +794,9 @@ canvas{width:100% !important;height:100% !important}
             <circle cx="120" cy="258" r="4" fill="#F5C518"/>
             <circle cx="208" cy="90" r="3.5" fill="#38BDF8"/>
             <circle cx="185" cy="300" r="3" fill="#FF5468"/>
-            <text x="206" y="186" font-size="8" fill="#00D46A" font-family="Inter, sans-serif">Abuja</text>
-            <text x="84" y="265" font-size="8" fill="#F5C518" font-family="Inter, sans-serif">Lagos</text>
-            <text x="215" y="89" font-size="8" fill="#38BDF8" font-family="Inter, sans-serif">Kano</text>
+            <text x="206" y="186" font-size="8" fill="#00D46A" font-family="IBM Plex Mono,monospace">Abuja</text>
+            <text x="84" y="265" font-size="8" fill="#F5C518" font-family="IBM Plex Mono,monospace">Lagos</text>
+            <text x="215" y="89" font-size="8" fill="#38BDF8" font-family="IBM Plex Mono,monospace">Kano</text>
           </svg>
           <div class="pin" style="top:44%;left:48%"></div>
         </div>
@@ -703,126 +804,270 @@ canvas{width:100% !important;height:100% !important}
 
       <div class="side-feed card">
         <div class="feed-row"><span>Last refresh</span><strong id="lastRefresh">—</strong></div>
+        <div class="feed-row"><span>Macro source</span><strong>World Bank</strong></div>
+        <div class="feed-row"><span>FX source</span><strong>Frankfurter</strong></div>
         <div class="feed-row"><span>Mode</span><strong id="modeText">Dark</strong></div>
-        <div class="feed-row"><span>FX source</span><strong>Currency API</strong></div>
-        <div class="feed-row"><span>Macro source</span><strong>TE indicators</strong></div>
       </div>
     </div>
   </section>
 
-  <section class="grid stats" id="snapshot">
-    <div class="stat card reveal" data-metric="fx" style="--accent:var(--warning)">
+  <section class="grid stats">
+    <div class="stat card reveal" style="--accent:var(--danger)">
+      <div class="icon">📈</div>
+      <div class="label">Inflation</div>
+      <div class="value" id="kpiInf">—</div>
+      <div class="sub" id="subInf">Fetching…</div>
+    </div>
+
+    <div class="stat card reveal" style="--accent:var(--accent)">
+      <div class="icon">🏦</div>
+      <div class="label">GDP Growth</div>
+      <div class="value" id="kpiGdp">—</div>
+      <div class="sub" id="subGdp">Fetching…</div>
+    </div>
+
+    <div class="stat card reveal" style="--accent:var(--warning)">
       <div class="icon">💱</div>
       <div class="label">USD / NGN</div>
       <div class="value" id="kpiFx">—</div>
       <div class="sub" id="subFx">Fetching…</div>
     </div>
 
-    <div class="stat card reveal" data-metric="inflation" style="--accent:var(--danger)">
-      <div class="icon">📈</div>
-      <div class="label">Inflation</div>
-      <div class="value" id="kpiInflation">—</div>
-      <div class="sub" id="subInflation">Fetching…</div>
-    </div>
-
-    <div class="stat card reveal" data-metric="mpr" style="--accent:var(--accent)">
-      <div class="icon">🏦</div>
-      <div class="label">MPR</div>
-      <div class="value" id="kpiMpr">—</div>
-      <div class="sub" id="subMpr">Fetching…</div>
-    </div>
-
-    <div class="stat card reveal" data-metric="reserves" style="--accent:var(--info)">
-      <div class="icon">🛡️</div>
-      <div class="label">Foreign reserves</div>
-      <div class="value" id="kpiReserves">—</div>
-      <div class="sub" id="subReserves">Fetching…</div>
-    </div>
-
-    <div class="stat card reveal" data-metric="crude" style="--accent:var(--good)">
-      <div class="icon">🛢️</div>
-      <div class="label">Crude output</div>
-      <div class="value" id="kpiCrude">—</div>
-      <div class="sub" id="subCrude">Fetching…</div>
-    </div>
-
-    <div class="stat card reveal" data-metric="gdp" style="--accent:#A855F7">
-      <div class="icon">🏗️</div>
-      <div class="label">GDP growth</div>
-      <div class="value" id="kpiGdp">—</div>
-      <div class="sub" id="subGdp">Fetching…</div>
-    </div>
-
-    <div class="stat card reveal" data-metric="unemployment" style="--accent:var(--bad)">
+    <div class="stat card reveal" style="--accent:var(--info)">
       <div class="icon">👷</div>
       <div class="label">Unemployment</div>
-      <div class="value" id="kpiUnemployment">—</div>
-      <div class="sub" id="subUnemployment">Fetching…</div>
+      <div class="value" id="kpiUnem">—</div>
+      <div class="sub" id="subUnem">Fetching…</div>
     </div>
   </section>
 
-  <section class="section card reveal" id="trend">
+  <section class="section card reveal" id="macro">
     <div class="section-head">
       <div>
-        <h3 class="section-title">Live movement</h3>
+        <h3 class="section-title">Macroeconomic Trends</h3>
       </div>
       <p class="section-desc">
-        This chart plots the values captured by the dashboard each time it refreshes.
-        It gives you a simple history without pretending everything changes by the minute.
+        World Bank indicators rendered as clean time series. Macro refresh happens automatically on an interval,
+        and the range buttons let you switch between recent years and the full available history.
       </p>
     </div>
 
     <div class="controls">
-      <div class="group" id="metricButtons">
-        <button class="metric-btn active" data-metric="fx" type="button">FX</button>
-        <button class="metric-btn" data-metric="inflation" type="button">Inflation</button>
-        <button class="metric-btn" data-metric="mpr" type="button">MPR</button>
-        <button class="metric-btn" data-metric="reserves" type="button">Reserves</button>
-        <button class="metric-btn" data-metric="crude" type="button">Crude</button>
-        <button class="metric-btn" data-metric="gdp" type="button">GDP</button>
-        <button class="metric-btn" data-metric="unemployment" type="button">Unemployment</button>
+      <div class="group" id="macroRanges">
+        <button class="range-btn active" data-range="5" type="button">5Y</button>
+        <button class="range-btn" data-range="10" type="button">10Y</button>
+        <button class="range-btn" data-range="all" type="button">All</button>
       </div>
-      <div class="meta" id="trendMeta">Showing FX snapshots</div>
+      <div class="meta" id="macroMeta">Showing last 5 annual points per indicator</div>
     </div>
 
-    <div class="chart-card card">
-      <div class="chart-top">
-        <div>
-          <h4 class="chart-name" id="chartTitle">USD / NGN</h4>
-          <div class="chart-src" id="chartSource">Daily reference rate · Currency API</div>
+    <div class="chart-grid-2">
+      <div class="chart-card card">
+        <div class="chart-top">
+          <div>
+            <h4 class="chart-name">Inflation Rate</h4>
+            <div class="chart-src">% annual CPI · World Bank</div>
+          </div>
+          <span class="badge">CPI</span>
         </div>
-        <span class="badge" id="chartBadge">FX</span>
+        <div class="canvas-wrap"><canvas id="chartInf"></canvas></div>
+        <div class="insight" id="insightInf"></div>
       </div>
-      <div class="canvas-wrap"><canvas id="trendChart"></canvas></div>
-      <div class="insight" id="chartInsight"></div>
+
+      <div class="chart-card card">
+        <div class="chart-top">
+          <div>
+            <h4 class="chart-name">GDP Growth Rate</h4>
+            <div class="chart-src">% annual · World Bank</div>
+          </div>
+          <span class="badge">GDP</span>
+        </div>
+        <div class="canvas-wrap"><canvas id="chartGdp"></canvas></div>
+        <div class="insight" id="insightGdp"></div>
+      </div>
+    </div>
+
+    <div class="chart-grid-2" style="margin-top:1rem">
+      <div class="chart-card card">
+        <div class="chart-top">
+          <div>
+            <h4 class="chart-name">Unemployment Rate</h4>
+            <div class="chart-src">% of labour force · World Bank / ILO</div>
+          </div>
+          <span class="badge">ILO</span>
+        </div>
+        <div class="canvas-wrap"><canvas id="chartUnem"></canvas></div>
+        <div class="insight" id="insightUnem"></div>
+      </div>
+
+      <div class="chart-card card">
+        <div class="chart-top">
+          <div>
+            <h4 class="chart-name">Macro Signal</h4>
+            <div class="chart-src">quick read · auto generated from the latest values</div>
+          </div>
+          <span class="badge">Pulse</span>
+        </div>
+        <div class="canvas-wrap" style="display:grid;place-items:center;text-align:center">
+          <div>
+            <div style="font-family:var(--heading);font-size:clamp(2rem,5vw,3.4rem);letter-spacing:-.05em" id="macroPulse">—</div>
+            <div class="meta" style="max-width:30ch;margin:0 auto" id="macroPulseText">Refreshing…</div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
-  <section class="section card reveal" id="sources">
+  <section class="section card reveal" id="fx">
     <div class="section-head">
       <div>
-        <h3 class="section-title">What this page uses</h3>
+        <h3 class="section-title">Live USD / NGN</h3>
       </div>
       <p class="section-desc">
-        The goal is simple: current readings, clear labels, and a page that still makes sense on a weak connection.
+        This feed uses a free browser-friendly FX API for daily reference rates. The chart updates automatically,
+        and the range buttons let you jump between 30 days, 90 days, and one year.
       </p>
     </div>
 
-    <div class="columns-3">
-      <div class="method card">
-        <div class="micon">💱</div>
-        <h3>Currency</h3>
-        <p>USD/NGN uses a free daily currency feed with browser-friendly access and fallback support if the primary CDN is slow.</p>
+    <div class="fx-hero">
+      <div class="card rate-box">
+        <div class="label">Current reference rate</div>
+        <div class="rate-big" id="fxBig">—</div>
+        <div class="meta" id="fxMeta">Fetching daily reference data…</div>
+        <div class="rate-mini">
+          <span class="mini-pill" id="fxChange">—</span>
+          <span class="mini-pill">Higher = weaker naira</span>
+          <span class="mini-pill">Auto refresh ON</span>
+        </div>
       </div>
+
+      <div class="card rate-box">
+        <div class="label">FX controls</div>
+        <div class="group" id="fxRanges">
+          <button class="range-btn active" data-fxrange="30" type="button">30D</button>
+          <button class="range-btn" data-fxrange="90" type="button">90D</button>
+          <button class="range-btn" data-fxrange="365" type="button">1Y</button>
+        </div>
+        <div class="meta" id="fxRangeMeta">Showing 30 days of USD/NGN reference data.</div>
+      </div>
+    </div>
+
+    <div class="chart-card card" style="margin-top:1rem">
+      <div class="chart-top">
+        <div>
+          <h4 class="chart-name">USD / NGN Trend</h4>
+          <div class="chart-src">daily reference rates · Frankfurter</div>
+        </div>
+        <span class="badge">FX</span>
+      </div>
+      <div class="canvas-wrap"><canvas id="chartFx"></canvas></div>
+      <div class="insight" id="insightFx"></div>
+    </div>
+  </section>
+
+  <section class="section card reveal" id="employment">
+    <div class="section-head">
+      <div>
+        <h3 class="section-title">NBS Job Creation & Separation 2024</h3>
+      </div>
+      <p class="section-desc">
+        Your research section, cleaned up with better spacing, clearer emphasis, and quarter switching that feels more interactive.
+      </p>
+    </div>
+
+    <div class="q-tabs" id="qTabs">
+      <div class="tab active" data-q="1" onclick="setQuarter(1,this)">
+        <div class="big">4,323</div>
+        <div class="small">Q1 2024</div>
+        <div class="desc">Jobs created</div>
+      </div>
+      <div class="tab" data-q="2" onclick="setQuarter(2,this)">
+        <div class="big">2,050</div>
+        <div class="small">Q2 2024</div>
+        <div class="desc">Jobs created</div>
+      </div>
+      <div class="tab" data-q="3" onclick="setQuarter(3,this)">
+        <div class="big">1,848</div>
+        <div class="small">Q3 2024</div>
+        <div class="desc">Jobs created</div>
+      </div>
+      <div class="tab" style="cursor:default">
+        <div class="big" style="color:var(--danger)">2,184</div>
+        <div class="small">Jan–Sep 2024</div>
+        <div class="desc">Total separated</div>
+      </div>
+    </div>
+
+    <div class="chart-grid-3">
+      <div class="chart-card card">
+        <div class="chart-top">
+          <div>
+            <h4 class="chart-name" id="jcsTitle">Jobs Created vs Separated · Q1 2024</h4>
+            <div class="chart-src">by occupational category · NBS 2024</div>
+          </div>
+          <span class="badge">Survey</span>
+        </div>
+        <div class="canvas-wrap tall"><canvas id="chartJcs"></canvas></div>
+        <div class="insight" id="insightJcs"></div>
+      </div>
+
+      <div class="chart-card card">
+        <div class="chart-top">
+          <div>
+            <h4 class="chart-name">Quarterly Trend</h4>
+            <div class="chart-src">total job creation across Q1–Q3</div>
+          </div>
+          <span class="badge">Trend</span>
+        </div>
+        <div class="canvas-wrap tall"><canvas id="chartTrend"></canvas></div>
+        <div class="insight" id="insightTrend"></div>
+      </div>
+    </div>
+
+    <div class="chart-card card" style="margin-top:1rem">
+      <div class="chart-top">
+        <div>
+          <h4 class="chart-name">Reasons for Job Separation</h4>
+          <div class="chart-src">NBS survey 2024 · n = 2,185</div>
+        </div>
+        <span class="badge">Table</span>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Reason</th>
+            <th>Count</th>
+            <th>Share</th>
+            <th style="width:220px">Distribution</th>
+          </tr>
+        </thead>
+        <tbody id="reasonsBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section card reveal" id="methodology">
+    <div class="section-head">
+      <div>
+        <h3 class="section-title">Methodology & Sources</h3>
+      </div>
+    </div>
+
+    <div class="methods">
       <div class="method card">
         <div class="micon">📊</div>
-        <h3>Macro snapshot</h3>
-        <p>Inflation, GDP growth, unemployment, policy rate, reserves, and crude production are read from a live Nigeria indicators snapshot.</p>
+        <h3>Descriptive Statistics</h3>
+        <p>Jobs created, separated, and net change are broken down by occupational category and quarter for a cleaner public view of the survey.</p>
       </div>
       <div class="method card">
-        <div class="micon">🧭</div>
-        <h3>Official reference links</h3>
-        <p>The footer keeps CBN links for foreign reserves, money market indicators, macro indicators, exchange rates, and crude oil price.</p>
+        <div class="micon">χ²</div>
+        <h3>Chi-Square Test</h3>
+        <p>The research section keeps the same analytical backbone, with the categoric distribution ready for formal statistical interpretation.</p>
+      </div>
+      <div class="method card">
+        <div class="micon">🌐</div>
+        <h3>Live Public APIs</h3>
+        <p>Macro indicators come from the World Bank API, while daily FX is handled by Frankfurter, all updated automatically from the browser.</p>
       </div>
     </div>
   </section>
@@ -832,16 +1077,14 @@ canvas{width:100% !important;height:100% !important}
       <div>
         <h4>NaijaMetrics</h4>
         <p style="margin:0;line-height:1.8">
-          A plain public dashboard for Nigeria’s current macro picture. No filler, no overdone wording, just the numbers.
+          A cleaner, faster Nigerian economic dashboard for macro context, research, and public data browsing.
         </p>
       </div>
       <div>
-        <h4>Official pages</h4>
-        <a href="https://www.cbn.gov.ng/intops/reserve.html" target="_blank" rel="noopener">CBN — Foreign Reserves</a>
-        <a href="https://www.cbn.gov.ng/rates/mnymktind.html" target="_blank" rel="noopener">CBN — Money Market Indicators</a>
-        <a href="https://www.cbn.gov.ng/rates/MacroIndicators.html" target="_blank" rel="noopener">CBN — Macro Indicators</a>
-        <a href="https://www.cbn.gov.ng/rates/ExchRateByCurrency.html" target="_blank" rel="noopener">CBN — Exchange Rates</a>
-        <a href="https://www.cbn.gov.ng/rates/crudeoil.html" target="_blank" rel="noopener">CBN — Crude Oil Price</a>
+        <h4>Data Sources</h4>
+        <a href="https://data.worldbank.org/country/nigeria" target="_blank" rel="noopener">World Bank Open Data</a>
+        <a href="https://nigerianstat.gov.ng" target="_blank" rel="noopener">National Bureau of Statistics</a>
+        <a href="https://www.cbn.gov.ng/rates/ExchRateByCurrency.html" target="_blank" rel="noopener">CBN Exchange Rates</a>
       </div>
       <div>
         <h4>Connect</h4>
@@ -861,354 +1104,203 @@ canvas{width:100% !important;height:100% !important}
 /* =========================
    STATE
 ========================= */
-const STORAGE_KEY = 'naijametrics_state_v5';
-const THEME_KEY = 'naijametrics_theme_v5';
-const AUTO_REFRESH_MS = 10 * 60 * 1000;
-const MAX_HISTORY = 300;
-
-const METRICS = {
-  fx: {
-    label: 'USD / NGN',
-    short: 'FX',
-    color: '#F5C518',
-    source: 'Daily reference rate · Currency API',
-    unit: '₦'
-  },
-  inflation: {
-    label: 'Inflation',
-    short: 'Inflation',
-    color: '#FF5468',
-    source: 'Nigeria indicators snapshot',
-    unit: '%'
-  },
-  mpr: {
-    label: 'Monetary Policy Rate',
-    short: 'MPR',
-    color: '#00D46A',
-    source: 'Nigeria indicators snapshot',
-    unit: '%'
-  },
-  reserves: {
-    label: 'Foreign Reserves',
-    short: 'Reserves',
-    color: '#38BDF8',
-    source: 'Nigeria indicators snapshot',
-    unit: 'USDm'
-  },
-  crude: {
-    label: 'Crude Oil Production',
-    short: 'Crude',
-    color: '#22C55E',
-    source: 'Nigeria indicators snapshot',
-    unit: 'kbpd'
-  },
-  gdp: {
-    label: 'GDP Annual Growth',
-    short: 'GDP',
-    color: '#A855F7',
-    source: 'Nigeria indicators snapshot',
-    unit: '%'
-  },
-  unemployment: {
-    label: 'Unemployment',
-    short: 'Jobs',
-    color: '#EF4444',
-    source: 'Nigeria indicators snapshot',
-    unit: '%'
-  }
-};
-
 const state = {
-  theme: localStorage.getItem(THEME_KEY) || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'),
-  selectedMetric: 'fx',
-  latest: {},
-  history: {
-    fx: [],
-    inflation: [],
-    mpr: [],
-    reserves: [],
-    crude: [],
+  theme: localStorage.getItem('nm-theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'),
+  macroRange: 5,
+  fxRange: 30,
+  quarter: 1,
+  data: {
+    inf: [],
     gdp: [],
-    unemployment: []
+    unem: [],
+    fx: []
   },
-  chart: null
+  charts: {}
 };
 
 /* =========================
-   HELPERS
+   THEME / UI
 ========================= */
-function saveState(){
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    latest: state.latest,
-    history: state.history
-  }));
-}
-function loadState(){
-  try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    const parsed = JSON.parse(raw);
-    if (parsed?.latest) state.latest = parsed.latest;
-    if (parsed?.history) state.history = parsed.history;
-  }catch{}
-}
 function setTheme(theme){
   state.theme = theme;
   document.documentElement.dataset.theme = theme;
-  localStorage.setItem(THEME_KEY, theme);
+  localStorage.setItem('nm-theme', theme);
   document.getElementById('themeBtn').textContent = theme === 'light' ? '☀ Light' : '☾ Dark';
   document.getElementById('modeText').textContent = theme === 'light' ? 'Light' : 'Dark';
 }
+
+function fmtDate(d){
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+
+function fmtNum(n, d = 1){
+  if (n === null || n === undefined || Number.isNaN(Number(n))) return '—';
+  return Number(n).toFixed(d);
+}
+
+function latest(arr){
+  return arr?.length ? arr[arr.length - 1] : null;
+}
+
+function prev(arr){
+  return arr?.length > 1 ? arr[arr.length - 2] : null;
+}
+
+function change(arr){
+  const a = latest(arr), b = prev(arr);
+  return (a && b) ? a.value - b.value : null;
+}
+
+function percentChange(arr){
+  const a = latest(arr), b = prev(arr);
+  return (a && b && b.value !== 0) ? ((a.value - b.value) / b.value) * 100 : null;
+}
+
+function sliceByRange(arr, range){
+  if (!Array.isArray(arr)) return [];
+  if (range === 'all') return arr.slice();
+  return arr.slice(-Number(range));
+}
+
 function setStatus(text){
   document.getElementById('statusLine').textContent = text;
   document.getElementById('liveLabel').textContent = text.includes('Refreshing') ? 'Refreshing…' : 'Live sync';
 }
-function fmtDateTime(ts){
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  }).format(new Date(ts));
+
+function setLastRefresh(){
+  document.getElementById('lastRefresh').textContent = new Date().toLocaleString();
 }
-function fmtShort(ts){
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(new Date(ts));
+
+function setActiveGroup(containerId, activeBtn){
+  document.querySelectorAll(`#${containerId} .range-btn`).forEach(btn => btn.classList.remove('active'));
+  activeBtn.classList.add('active');
 }
-function asNum(v){
-  const n = Number(String(v).replace(/,/g,'').trim());
-  return Number.isFinite(n) ? n : null;
-}
-function latest(arr){
-  return Array.isArray(arr) && arr.length ? arr[arr.length - 1] : null;
-}
-function prev(arr){
-  return Array.isArray(arr) && arr.length > 1 ? arr[arr.length - 2] : null;
-}
-function change(arr){
-  const a = latest(arr), b = prev(arr);
-  return (a && b && Number.isFinite(a.v) && Number.isFinite(b.v)) ? a.v - b.v : null;
-}
-function pctChange(arr){
-  const a = latest(arr), b = prev(arr);
-  return (a && b && b.v) ? ((a.v - b.v) / b.v) * 100 : null;
-}
-function signClass(n){
-  if (n > 0) return 'up';
-  if (n < 0) return 'down';
-  return 'flat';
-}
-function formatValue(metric, n){
-  if (n === null || n === undefined || Number.isNaN(Number(n))) return '—';
-  const v = Number(n);
-  switch(metric){
-    case 'fx': return `₦${Math.round(v).toLocaleString()}`;
-    case 'reserves': return `US$${(v / 1000).toFixed(2)}B`;
-    case 'crude': return `${(v / 1000).toFixed(2)}M`;
-    default: return `${v.toFixed(2)}%`;
+
+/* =========================
+   CURSOR
+========================= */
+const cur = document.getElementById('cursor');
+const ring = document.getElementById('cursor-ring');
+let mx = 0, my = 0, rx = 0, ry = 0;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX;
+  my = e.clientY;
+  if (cur) {
+    cur.style.left = mx + 'px';
+    cur.style.top = my + 'px';
   }
-}
-function formatChange(metric, d){
-  if (d === null || d === undefined || Number.isNaN(Number(d))) return 'No prior reading';
-  const n = Number(d);
-  const arrow = n > 0 ? '▲' : n < 0 ? '▼' : '●';
-  switch(metric){
-    case 'fx': return `${arrow} ${Math.abs(n).toLocaleString(undefined,{maximumFractionDigits:0})} naira`;
-    case 'reserves': return `${arrow} US$${Math.abs(n/1000).toFixed(2)}B`;
-    case 'crude': return `${arrow} ${(Math.abs(n)/1000).toFixed(2)}M bpd`;
-    default: return `${arrow} ${Math.abs(n).toFixed(2)} pts`;
+});
+
+(function cursorLoop(){
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  if (ring) {
+    ring.style.left = rx + 'px';
+    ring.style.top = ry + 'px';
   }
-}
-function setActiveMetric(metric){
-  state.selectedMetric = metric;
-  document.querySelectorAll('#metricButtons .metric-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.metric === metric);
+  requestAnimationFrame(cursorLoop);
+})();
+
+document.querySelectorAll('a,button,.tab,.theme-toggle,.refresh-btn,.range-btn,.card').forEach(el => {
+  el.addEventListener('mouseenter', () => {
+    if (!ring) return;
+    ring.style.width = '52px';
+    ring.style.height = '52px';
+    ring.style.borderColor = 'rgba(0,212,106,0.72)';
   });
-  document.getElementById('trendMeta').textContent = `${METRICS[metric].label} · refreshed automatically`;
-  document.getElementById('chartTitle').textContent = METRICS[metric].label;
-  document.getElementById('chartSource').textContent = METRICS[metric].source;
-  document.getElementById('chartBadge').textContent = METRICS[metric].short;
-  renderChart(metric);
-}
-function appendHistory(metric, value, ts){
-  if (!Number.isFinite(Number(value))) return;
-  if (!state.history[metric]) state.history[metric] = [];
-  state.history[metric].push({ t: ts, v: Number(value) });
-  if (state.history[metric].length > MAX_HISTORY) {
-    state.history[metric] = state.history[metric].slice(-MAX_HISTORY);
-  }
-}
-function normalizeText(text){
-  return String(text)
-    .replace(/\r/g, '\n')
-    .split('\n')
-    .map(line => line.replace(/\s+/g, ' ').trim())
-    .filter(Boolean);
-}
-function findLine(lines, label, exclude = []){
-  const labelLower = label.toLowerCase();
-  return lines.find(line => {
-    const low = line.toLowerCase();
-    if (!low.includes(labelLower)) return false;
-    if (exclude.some(x => low.includes(x.toLowerCase()))) return false;
-    return /\d/.test(line) && /(percent|USD Million|NGN Million|BBL\/D\/1K|points|Mar\/26|Feb\/26|Jan\/26|Dec\/25|Dec\/24|Sep\/25|Nov\/25)/i.test(line);
-  }) || null;
-}
-function extractMetric(text, label, exclude = []){
-  const lines = normalizeText(text);
-  const line = findLine(lines, label, exclude);
-  if (!line) return null;
-  const idx = line.toLowerCase().indexOf(label.toLowerCase());
-  const segment = idx >= 0 ? line.slice(idx) : line;
-  const dateMatch = segment.match(/\b(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\/\d{2}\b/i);
-  const beforeDate = dateMatch ? segment.slice(0, dateMatch.index).trim() : segment;
-  const nums = (beforeDate.match(/-?\d[\d,]*(?:\.\d+)?/g) || []).map(v => Number(v.replace(/,/g,'')));
-  if (!nums.length) return null;
-  return {
-    current: nums[0] ?? null,
-    previous: nums[1] ?? null,
-    highest: nums[2] ?? null,
-    lowest: nums[3] ?? null,
-    asOf: dateMatch ? dateMatch[0] : '',
-    raw: line
-  };
-}
-async function fetchWithTimeout(url, timeoutMs = 15000, opts = {}){
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-  try{
-    const res = await fetch(url, { cache: 'no-store', signal: ctrl.signal, ...opts });
-    return res;
-  }finally{
-    clearTimeout(timer);
-  }
-}
-async function fetchText(url){
-  const candidates = [
-    url,
-    `https://r.jina.ai/http://${url.replace(/^https?:\/\//,'')}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
-  ];
-  let lastErr = null;
-  for (const candidate of candidates){
-    try{
-      const res = await fetchWithTimeout(candidate, 15000);
-      if (!res.ok) continue;
-      return await res.text();
-    }catch(err){
-      lastErr = err;
-    }
-  }
-  throw lastErr || new Error('Failed to fetch text');
-}
-async function fetchJson(urls){
-  let lastErr = null;
-  for (const url of urls){
-    try{
-      const res = await fetchWithTimeout(url, 15000);
-      if (!res.ok) continue;
-      return await res.json();
-    }catch(err){
-      lastErr = err;
-    }
-  }
-  throw lastErr || new Error('Failed to fetch json');
-}
-function updateHeaderSummary(){
-  const fx = state.latest.fx?.value;
-  const infl = state.latest.inflation?.value;
-  const mpr = state.latest.mpr?.value;
-  const reserves = state.latest.reserves?.value;
-  const summary = [
-    fx !== null && fx !== undefined ? `FX: ${formatValue('fx', fx)}` : null,
-    infl !== null && infl !== undefined ? `Inflation: ${formatValue('inflation', infl)}` : null,
-    mpr !== null && mpr !== undefined ? `MPR: ${formatValue('mpr', mpr)}` : null,
-    reserves !== null && reserves !== undefined ? `Reserves: ${formatValue('reserves', reserves)}` : null
-  ].filter(Boolean).join(' · ');
-  document.getElementById('statusLine').textContent = summary || 'Loading current readings…';
-}
+  el.addEventListener('mouseleave', () => {
+    if (!ring) return;
+    ring.style.width = '34px';
+    ring.style.height = '34px';
+    ring.style.borderColor = 'rgba(0,212,106,0.35)';
+  });
+});
+
+/* =========================
+   REVEAL
+========================= */
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) entry.target.classList.add('show');
+  });
+}, { threshold: 0.08 });
+
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
 
 /* =========================
    DATA SOURCES
 ========================= */
-async function fetchFxCurrent(){
-  const json = await fetchJson([
-    'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd/ngn.json',
-    'https://latest.currency-api.pages.dev/v1/currencies/usd/ngn.json'
-  ]);
-  const rate = json?.usd?.ngn ?? json?.ngn ?? null;
-  return {
-    current: asNum(rate),
-    previous: null,
-    asOf: json?.date || ''
-  };
+async function fetchWB(indicator){
+  try{
+    const url = `https://api.worldbank.org/v2/country/NG/indicator/${indicator}?format=json&mrv=60&per_page=60`;
+    const res = await fetch(url);
+    const json = await res.json();
+    const rows = (Array.isArray(json) && json[1]) ? json[1] : [];
+    return rows
+      .filter(row => row && row.value !== null && row.value !== undefined)
+      .map(row => ({ date: String(row.date), value: Number(row.value) }))
+      .filter(row => Number.isFinite(row.value))
+      .sort((a,b) => Number(a.date) - Number(b.date));
+  }catch(err){
+    return [];
+  }
 }
-async function fetchNigeriaSnapshot(){
-  const text = await fetchText('https://www.tradingeconomics.com/nigeria/indicators');
-  const inflation = extractMetric(text, 'Inflation Rate', ['Inflation Rate MoM', 'Core Inflation Rate']);
-  const mpr = extractMetric(text, 'Interest Rate', ['Deposit Interest Rate', 'Lending Rate']);
-  const reserves = extractMetric(text, 'Foreign Exchange Reserves');
-  const crude = extractMetric(text, 'Crude Oil Production');
-  const gdp = extractMetric(text, 'GDP Annual Growth Rate');
-  const unemployment = extractMetric(text, 'Unemployment Rate');
-  const crRatio = extractMetric(text, 'Cash Reserve Ratio');
-  const stock = extractMetric(text, 'Stock Market');
-  return { inflation, mpr, reserves, crude, gdp, unemployment, crRatio, stock };
+
+async function fetchFx(days = 365){
+  try{
+    const end = new Date();
+    const start = new Date(end);
+    start.setDate(end.getDate() - days);
+
+    const url = `https://api.frankfurter.dev/v2/rates?from=${fmtDate(start)}&to=${fmtDate(end)}&base=USD&quotes=NGN`;
+    const res = await fetch(url);
+    const json = await res.json();
+
+    return (Array.isArray(json) ? json : [])
+      .map(row => ({
+        date: row.date,
+        value: Number(row.rate)
+      }))
+      .filter(row => Number.isFinite(row.value))
+      .sort((a,b) => a.date.localeCompare(b.date));
+  }catch(err){
+    return [];
+  }
 }
 
 /* =========================
-   RENDERING
+   CHARTS
 ========================= */
-function syncStat(metric, current, previous, asOf, subId, valueId){
-  const valEl = document.getElementById(valueId);
-  const subEl = document.getElementById(subId);
-  if (!valEl || !subEl) return;
-
-  if (current === null || current === undefined || Number.isNaN(Number(current))) {
-    valEl.textContent = '—';
-    subEl.textContent = 'No reading';
-    return;
+function destroyChart(key){
+  if (state.charts[key]) {
+    state.charts[key].destroy();
+    state.charts[key] = null;
   }
-
-  valEl.textContent = formatValue(metric, current);
-
-  const delta = previous !== null && previous !== undefined ? Number(current) - Number(previous) : null;
-  const sign = signClass(delta);
-  subEl.innerHTML = `
-    ${asOf ? `${asOf} · ` : ''}
-    <span class="${sign}">${formatChange(metric, delta)}</span>
-  `;
 }
-function addLivePoint(metric, value){
-  const ts = Date.now();
-  appendHistory(metric, value, ts);
-}
-function renderChart(metric){
-  const series = state.history[metric] || [];
-  const labels = series.map(p => fmtShort(p.t));
-  const data = series.map(p => p.v);
-  const color = METRICS[metric].color;
 
-  if (state.chart) state.chart.destroy();
+function makeLineChart(key, canvasId, labels, values, color, yFormatter){
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
 
-  const ctx = document.getElementById('trendChart');
-  state.chart = new Chart(ctx, {
+  destroyChart(key);
+
+  state.charts[key] = new Chart(canvas, {
     type: 'line',
     data: {
       labels,
       datasets: [{
-        label: METRICS[metric].label,
-        data,
+        label: key,
+        data: values,
         borderColor: color,
-        backgroundColor: color + '20',
+        backgroundColor: color + '1A',
         borderWidth: 2,
         pointRadius: 2.5,
         pointHoverRadius: 5,
         pointBackgroundColor: color,
         fill: true,
-        tension: 0.35
+        tension: 0.38
       }]
     },
     options: {
@@ -1225,234 +1317,305 @@ function renderChart(metric){
           bodyColor: getComputedStyle(document.documentElement).getPropertyValue('--muted'),
           padding: 10,
           callbacks: {
-            label: (ctx) => `${ctx.dataset.label}: ${formatValue(metric, ctx.raw)}`
+            label: ctx => {
+              const v = ctx.raw;
+              return `${ctx.dataset.label}: ${yFormatter ? yFormatter(v) : Number(v).toFixed(1)}`;
+            }
           }
         }
       },
       scales: {
         x: {
           grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border') },
-          ticks: { maxRotation: 0, maxTicksLimit: 8 }
+          ticks: { maxTicksLimit: 8, maxRotation: 0 }
         },
         y: {
           grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border') },
-          ticks: {
-            callback: (v) => formatValue(metric, v)
-          }
+          ticks: { callback: v => yFormatter ? yFormatter(v) : Number(v).toFixed(1) }
         }
       }
     }
   });
-
-  const last = latest(series);
-  const first = series.length ? series[0] : null;
-  const move = last && first ? last.v - first.v : null;
-  const pct = last && first && first.v !== 0 ? ((last.v - first.v) / first.v) * 100 : null;
-
-  document.getElementById('chartInsight').innerHTML = last
-    ? `<strong>Snapshot history:</strong> latest reading is ${formatValue(metric, last.v)}. ${pct !== null ? `Across the saved refresh history, the move is ${Math.abs(pct).toFixed(2)}%.` : ''}`
-    : `<strong>No history yet.</strong> The chart fills as the page keeps refreshing.`;
 }
+
+function renderReasons(){
+  const reasons = [
+    { r:'Voluntary resignation', f:612 },
+    { r:'Business closure/downsizing', f:498 },
+    { r:'Contract/seasonal end', f:387 },
+    { r:'Retirement', f:265 },
+    { r:'Dismissal/termination', f:218 },
+    { r:'Business relocation', f:135 },
+    { r:'Other/unspecified', f:70 }
+  ];
+  const total = reasons.reduce((a,b) => a + b.f, 0);
+  const max = Math.max(...reasons.map(r => r.f));
+  document.getElementById('reasonsBody').innerHTML = reasons.map(r => {
+    const pct = (r.f / total * 100).toFixed(1);
+    const w = Math.round(r.f / max * 170);
+    return `
+      <tr>
+        <td>${r.r}</td>
+        <td>${r.f.toLocaleString()}</td>
+        <td>${pct}%</td>
+        <td><div class="bar"><span style="width:${w}px"></span></div></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderQuarter(q){
+  const cats = ['W.Proprietors','Mgr/Prof/Tech','Clerical','Consultants','Apprentices','Operatives','Unpaid','Other'];
+  const created = {
+    1: [820,750,420,180,610,980,380,183],
+    2: [390,356,200,85,290,465,181,83],
+    3: [350,320,180,77,261,419,163,78]
+  };
+  const separated = [380,320,280,95,310,480,220,99];
+
+  destroyChart('jcs');
+  state.charts.jcs = new Chart(document.getElementById('chartJcs'), {
+    type: 'bar',
+    data: {
+      labels: cats,
+      datasets: [
+        {
+          label: `Created (Q${q})`,
+          data: created[q],
+          backgroundColor: 'rgba(0,212,106,0.18)',
+          borderColor: '#00D46A',
+          borderWidth: 1.3,
+          borderRadius: 4
+        },
+        {
+          label: 'Separated',
+          data: separated,
+          backgroundColor: 'rgba(255,84,104,0.15)',
+          borderColor: '#FF5468',
+          borderWidth: 1.3,
+          borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { labels: { boxWidth: 10, color: getComputedStyle(document.documentElement).getPropertyValue('--muted') } }
+      },
+      scales: {
+        x: { grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border') }, ticks: { font: { size: 10 } } },
+        y: { grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border') } }
+      }
+    }
+  });
+
+  const totalCreated = created[q].reduce((a,b) => a+b, 0);
+  const totalSeparated = separated.reduce((a,b) => a+b, 0);
+  const net = totalCreated - totalSeparated;
+
+  document.getElementById('jcsTitle').textContent = `Jobs Created vs Separated · Q${q} 2024`;
+  document.getElementById('insightJcs').innerHTML =
+    `<strong>Quarter view:</strong> Q${q} recorded ${totalCreated.toLocaleString()} jobs created against ${totalSeparated.toLocaleString()} separations, leaving a net ${net >= 0 ? 'gain' : 'loss'} of <strong>${Math.abs(net).toLocaleString()}</strong>.`;
+}
+
+function renderTrend(){
+  const totals = [
+    [820,750,420,180,610,980,380,183].reduce((a,b)=>a+b,0),
+    [390,356,200,85,290,465,181,83].reduce((a,b)=>a+b,0),
+    [350,320,180,77,261,419,163,78].reduce((a,b)=>a+b,0)
+  ];
+
+  destroyChart('trend');
+  state.charts.trend = new Chart(document.getElementById('chartTrend'), {
+    type: 'bar',
+    data: {
+      labels: ['Q1 2024', 'Q2 2024', 'Q3 2024'],
+      datasets: [
+        {
+          label: 'Jobs Created',
+          data: totals,
+          backgroundColor: ['rgba(0,212,106,0.72)','rgba(0,212,106,0.46)','rgba(0,212,106,0.26)'],
+          borderColor: '#00D46A',
+          borderWidth: 1.3,
+          borderRadius: 6
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border') } },
+        y: { grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border') }, ticks: { callback: v => Number(v).toLocaleString() } }
+      }
+    }
+  });
+
+  const trend = totals[2] < totals[0] ? 'Job creation cooled across the quarter sequence.' : 'Job creation improved across the quarter sequence.';
+  document.getElementById('insightTrend').innerHTML = `<strong>Trend insight:</strong> ${trend}`;
+}
+
+function renderMacro(){
+  const inf = sliceByRange(state.data.inf, state.macroRange);
+  const gdp = sliceByRange(state.data.gdp, state.macroRange);
+  const unem = sliceByRange(state.data.unem, state.macroRange);
+
+  document.getElementById('macroMeta').textContent =
+    state.macroRange === 'all'
+      ? 'Showing all available annual points for each macro indicator.'
+      : `Showing last ${state.macroRange} annual points per indicator`;
+
+  if (inf.length){
+    const cur = latest(inf), chg = change(inf);
+    document.getElementById('kpiInf').textContent = `${fmtNum(cur.value,1)}%`;
+    document.getElementById('subInf').innerHTML = `${cur.date} ${badgeDelta(chg, '%', false)}`;
+    document.getElementById('insightInf').innerHTML =
+      `<strong>Inflation context:</strong> the latest available annual CPI reading is ${fmtNum(cur.value,1)}%, with the selected window showing a ${Math.abs(cur.value - inf[0].value).toFixed(1)} point movement from the start of the range.`;
+    makeLineChart('inf', 'chartInf', inf.map(d => d.date), inf.map(d => d.value), '#FF5468', v => `${Number(v).toFixed(1)}%`);
+  }
+
+  if (gdp.length){
+    const cur = latest(gdp), chg = change(gdp);
+    document.getElementById('kpiGdp').textContent = `${fmtNum(cur.value,1)}%`;
+    document.getElementById('subGdp').innerHTML = `${cur.date} ${badgeDelta(chg, '%', true)}`;
+    document.getElementById('insightGdp').innerHTML =
+      `<strong>Growth context:</strong> GDP growth is currently ${fmtNum(cur.value,1)}%, and the selected window shows a ${Math.abs(cur.value - gdp[0].value).toFixed(1)} point shift from the first point.`;
+    makeLineChart('gdp', 'chartGdp', gdp.map(d => d.date), gdp.map(d => d.value), '#00D46A', v => `${Number(v).toFixed(1)}%`);
+  }
+
+  if (unem.length){
+    const cur = latest(unem), chg = change(unem);
+    document.getElementById('kpiUnem').textContent = `${fmtNum(cur.value,1)}%`;
+    document.getElementById('subUnem').innerHTML = `${cur.date} ${badgeDelta(chg, '%', false)}`;
+    document.getElementById('insightUnem').innerHTML =
+      `<strong>Labour context:</strong> unemployment is ${fmtNum(cur.value,1)}%, and the selected window changed by ${Math.abs(cur.value - unem[0].value).toFixed(1)} points from the start of the slice.`;
+    makeLineChart('unem', 'chartUnem', unem.map(d => d.date), unem.map(d => d.value), '#38BDF8', v => `${Number(v).toFixed(1)}%`);
+  }
+
+  const pulse =
+    inf.length && gdp.length && unem.length
+      ? ((gdp.at(-1).value - unem.at(-1).value) + (10 - inf.at(-1).value)).toFixed(1)
+      : '—';
+
+  document.getElementById('macroPulse').textContent = pulse;
+  document.getElementById('macroPulseText').textContent =
+    pulse === '—'
+      ? 'Waiting for enough live macro points.'
+      : 'A quick composite snapshot generated from the latest macro readings.';
+}
+
+function renderFx(){
+  const fx = sliceByRange(state.data.fx, state.fxRange);
+  document.getElementById('fxRangeMeta').textContent =
+    `Showing ${state.fxRange} days of USD/NGN reference data.`;
+
+  if (fx.length){
+    const cur = latest(fx);
+    const chg = change(fx);
+    const pct = percentChange(fx);
+    document.getElementById('fxBig').textContent = `₦${Math.round(cur.value).toLocaleString()}`;
+    document.getElementById('fxMeta').textContent = `${cur.date} · daily reference rate`;
+    document.getElementById('fxChange').textContent = `${chg >= 0 ? '▲' : '▼'} ${Math.abs(chg).toFixed(2)} ₦ ${pct !== null ? `(${Math.abs(pct).toFixed(2)}%)` : ''}`;
+
+    document.getElementById('subFx').innerHTML = `${cur.date} ${badgeDelta(chg, ' ₦', chg < 0)}`;
+    document.getElementById('insightFx').innerHTML =
+      `<strong>FX view:</strong> the last reference rate is ₦${Math.round(cur.value).toLocaleString()} per USD. Across the selected window, the move is ${pct !== null ? `${Math.abs(pct).toFixed(2)}%` : 'n/a'} relative to the first point.`;
+
+    makeLineChart('fx', 'chartFx', fx.map(d => d.date), fx.map(d => d.value), '#F5C518', v => `₦${Math.round(v).toLocaleString()}`);
+  }
+}
+
+function badgeDelta(delta, suffix, positiveIsGood = true){
+  if (delta === null || delta === undefined || Number.isNaN(delta)) return `<span class="mini-pill">No change</span>`;
+  const positive = delta > 0;
+  const upGood = positiveIsGood ? positive : !positive;
+  const cls = upGood ? 'up' : 'down';
+  const icon = positive ? '▲' : '▼';
+  return `<span class="mini-pill ${cls}">${icon} ${Math.abs(delta).toFixed(1)}${suffix}</span>`;
+}
+
 function renderAll(){
-  updateHeaderSummary();
-  const fx = state.latest.fx || {};
-  const inflation = state.latest.inflation || {};
-  const mpr = state.latest.mpr || {};
-  const reserves = state.latest.reserves || {};
-  const crude = state.latest.crude || {};
-  const gdp = state.latest.gdp || {};
-  const unemployment = state.latest.unemployment || {};
-
-  syncStat('fx', fx.value, fx.previous, fx.asOf, 'subFx', 'kpiFx');
-  syncStat('inflation', inflation.value, inflation.previous, inflation.asOf, 'subInflation', 'kpiInflation');
-  syncStat('mpr', mpr.value, mpr.previous, mpr.asOf, 'subMpr', 'kpiMpr');
-  syncStat('reserves', reserves.value, reserves.previous, reserves.asOf, 'subReserves', 'kpiReserves');
-  syncStat('crude', crude.value, crude.previous, crude.asOf, 'subCrude', 'kpiCrude');
-  syncStat('gdp', gdp.value, gdp.previous, gdp.asOf, 'subGdp', 'kpiGdp');
-  syncStat('unemployment', unemployment.value, unemployment.previous, unemployment.asOf, 'subUnemployment', 'kpiUnemployment');
-
-  document.getElementById('lastRefresh').textContent = fmtDateTime(Date.now());
-
-  renderChart(state.selectedMetric);
-}
-function adoptSnapshot(snapshot){
-  const ts = Date.now();
-
-  if (snapshot.fx?.current !== null && snapshot.fx?.current !== undefined) {
-    state.latest.fx = { value: snapshot.fx.current, previous: snapshot.fx.previous, asOf: snapshot.fx.asOf };
-    addLivePoint('fx', snapshot.fx.current);
-  }
-  if (snapshot.inflation?.current !== null && snapshot.inflation?.current !== undefined) {
-    state.latest.inflation = { value: snapshot.inflation.current, previous: snapshot.inflation.previous, asOf: snapshot.inflation.asOf };
-    addLivePoint('inflation', snapshot.inflation.current);
-  }
-  if (snapshot.mpr?.current !== null && snapshot.mpr?.current !== undefined) {
-    state.latest.mpr = { value: snapshot.mpr.current, previous: snapshot.mpr.previous, asOf: snapshot.mpr.asOf };
-    addLivePoint('mpr', snapshot.mpr.current);
-  }
-  if (snapshot.reserves?.current !== null && snapshot.reserves?.current !== undefined) {
-    state.latest.reserves = { value: snapshot.reserves.current, previous: snapshot.reserves.previous, asOf: snapshot.reserves.asOf };
-    addLivePoint('reserves', snapshot.reserves.current);
-  }
-  if (snapshot.crude?.current !== null && snapshot.crude?.current !== undefined) {
-    state.latest.crude = { value: snapshot.crude.current, previous: snapshot.crude.previous, asOf: snapshot.crude.asOf };
-    addLivePoint('crude', snapshot.crude.current);
-  }
-  if (snapshot.gdp?.current !== null && snapshot.gdp?.current !== undefined) {
-    state.latest.gdp = { value: snapshot.gdp.current, previous: snapshot.gdp.previous, asOf: snapshot.gdp.asOf };
-    addLivePoint('gdp', snapshot.gdp.current);
-  }
-  if (snapshot.unemployment?.current !== null && snapshot.unemployment?.current !== undefined) {
-    state.latest.unemployment = { value: snapshot.unemployment.current, previous: snapshot.unemployment.previous, asOf: snapshot.unemployment.asOf };
-    addLivePoint('unemployment', snapshot.unemployment.current);
-  }
-
-  if (snapshot.crRatio?.current !== null && snapshot.crRatio?.current !== undefined) {
-    state.latest.crRatio = { value: snapshot.crRatio.current, previous: snapshot.crRatio.previous, asOf: snapshot.crRatio.asOf };
-  }
-
-  for (const key of Object.keys(state.history)) {
-    if (state.history[key].length > MAX_HISTORY) state.history[key] = state.history[key].slice(-MAX_HISTORY);
-  }
-  saveState();
+  renderMacro();
+  renderFx();
+  renderQuarter(state.quarter);
+  renderReasons();
+  setLastRefresh();
 }
 
 /* =========================
-   REFRESH
+   INTERACTIONS
 ========================= */
+function setQuarter(q, el){
+  state.quarter = q;
+  document.querySelectorAll('#qTabs .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderQuarter(q);
+}
+
+document.getElementById('themeBtn').addEventListener('click', () => {
+  setTheme(state.theme === 'dark' ? 'light' : 'dark');
+  renderAll();
+});
+
+document.getElementById('refreshBtn').addEventListener('click', () => refreshData());
+
+document.getElementById('macroRanges').addEventListener('click', e => {
+  const btn = e.target.closest('.range-btn');
+  if (!btn) return;
+  setActiveGroup('macroRanges', btn);
+  state.macroRange = btn.dataset.range === 'all' ? 'all' : Number(btn.dataset.range);
+  renderMacro();
+});
+
+document.getElementById('fxRanges').addEventListener('click', e => {
+  const btn = e.target.closest('.range-btn');
+  if (!btn) return;
+  setActiveGroup('fxRanges', btn);
+  state.fxRange = Number(btn.dataset.fxrange);
+  renderFx();
+});
+
 async function refreshData(){
-  setStatus('Refreshing current readings…');
-  try{
-    const [fx, snap] = await Promise.all([
-      fetchFxCurrent(),
-      fetchNigeriaSnapshot()
-    ]);
+  setStatus('Refreshing live data…');
 
-    const composed = {
-      fx,
-      inflation: snap.inflation,
-      mpr: snap.mpr,
-      reserves: snap.reserves,
-      crude: snap.crude,
-      gdp: snap.gdp,
-      unemployment: snap.unemployment,
-      crRatio: snap.crRatio
-    };
+  const [inf, gdp, unem, fx] = await Promise.all([
+    fetchWB('FP.CPI.TOTL.ZG'),
+    fetchWB('NY.GDP.MKTP.KD.ZG'),
+    fetchWB('SL.UEM.TOTL.ZS'),
+    fetchFx(365)
+  ]);
 
-    adoptSnapshot(composed);
-    renderAll();
+  state.data.inf = inf;
+  state.data.gdp = gdp;
+  state.data.unem = unem;
+  state.data.fx = fx;
 
+  renderAll();
+
+  if (inf.length || gdp.length || unem.length || fx.length) {
     setStatus('Live data updated successfully.');
-  }catch(err){
-    renderAll();
-    setStatus('Using the last saved readings for now. The page will try again on the next refresh.');
+  } else {
+    setStatus('Live data temporarily unavailable. Charts will recover on the next refresh.');
   }
 }
-function start(){
-  loadState();
+
+/* =========================
+   BOOT
+========================= */
+(function boot(){
   setTheme(state.theme);
-
-  if (!state.latest.fx && state.history.fx.length) {
-    state.latest.fx = { value: latest(state.history.fx).v, previous: null, asOf: 'Cached' };
-  }
-  if (!state.latest.inflation && state.history.inflation.length) {
-    state.latest.inflation = { value: latest(state.history.inflation).v, previous: null, asOf: 'Cached' };
-  }
-  if (!state.latest.mpr && state.history.mpr.length) {
-    state.latest.mpr = { value: latest(state.history.mpr).v, previous: null, asOf: 'Cached' };
-  }
-  if (!state.latest.reserves && state.history.reserves.length) {
-    state.latest.reserves = { value: latest(state.history.reserves).v, previous: null, asOf: 'Cached' };
-  }
-  if (!state.latest.crude && state.history.crude.length) {
-    state.latest.crude = { value: latest(state.history.crude).v, previous: null, asOf: 'Cached' };
-  }
-  if (!state.latest.gdp && state.history.gdp.length) {
-    state.latest.gdp = { value: latest(state.history.gdp).v, previous: null, asOf: 'Cached' };
-  }
-  if (!state.latest.unemployment && state.history.unemployment.length) {
-    state.latest.unemployment = { value: latest(state.history.unemployment).v, previous: null, asOf: 'Cached' };
-  }
-
-  setActiveMetric('fx');
-  renderAll();
+  document.querySelector('[data-range="5"]').classList.add('active');
+  document.querySelector('[data-fxrange="30"]').classList.add('active');
 
   refreshData();
 
   setInterval(() => {
     if (document.visibilityState === 'visible') refreshData();
-  }, AUTO_REFRESH_MS);
-}
-
-/* =========================
-   CURSOR + REVEAL
-========================= */
-const cur = document.getElementById('cursor');
-const ring = document.getElementById('cursor-ring');
-let mx = 0, my = 0, rx = 0, ry = 0;
-
-document.addEventListener('mousemove', e => {
-  mx = e.clientX;
-  my = e.clientY;
-  if (cur) {
-    cur.style.left = mx + 'px';
-    cur.style.top = my + 'px';
-  }
-});
-(function loop(){
-  rx += (mx - rx) * 0.12;
-  ry += (my - ry) * 0.12;
-  if (ring) {
-    ring.style.left = rx + 'px';
-    ring.style.top = ry + 'px';
-  }
-  requestAnimationFrame(loop);
+  }, 15 * 60 * 1000);
 })();
-
-document.querySelectorAll('a,button,.tab,.theme-btn,.refresh-btn,.metric-btn,.card').forEach(el => {
-  el.addEventListener('mouseenter', () => {
-    if (!ring) return;
-    ring.style.width = '52px';
-    ring.style.height = '52px';
-    ring.style.borderColor = 'rgba(0,212,106,.72)';
-  });
-  el.addEventListener('mouseleave', () => {
-    if (!ring) return;
-    ring.style.width = '34px';
-    ring.style.height = '34px';
-    ring.style.borderColor = 'rgba(0,212,106,.35)';
-  });
-});
-
-const obs = new IntersectionObserver(entries => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) entry.target.classList.add('show');
-  });
-}, { threshold: 0.08 });
-document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
-
-/* =========================
-   INTERACTIONS
-========================= */
-document.getElementById('themeBtn').addEventListener('click', () => {
-  setTheme(state.theme === 'dark' ? 'light' : 'dark');
-});
-document.getElementById('refreshBtn').addEventListener('click', () => {
-  refreshData();
-});
-document.getElementById('metricButtons').addEventListener('click', e => {
-  const btn = e.target.closest('.metric-btn');
-  if (!btn) return;
-  setActiveMetric(btn.dataset.metric);
-});
-document.querySelectorAll('.stat[data-metric]').forEach(card => {
-  card.addEventListener('click', () => setActiveMetric(card.dataset.metric));
-});
-
-/* =========================
-   BOOT
-========================= */
-start();
 </script>
 </body>
 </html>
