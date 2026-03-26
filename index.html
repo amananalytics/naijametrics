@@ -1,784 +1,305 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>NaijaMetrics — Nigeria Economic Intelligence</title>
-<meta name="description" content="Nigeria economic intelligence dashboard with live macro data, FX tracking, and NBS research." />
-<meta property="og:title" content="NaijaMetrics — Nigeria Economic Intelligence" />
-<meta property="og:description" content="Live Nigerian economic data. Inflation, GDP, FX, employment." />
-<meta name="theme-color" content="#05080A" />
-
+<meta name="description" content="Nigeria's cleanest real-time economic dashboard. Live inflation, GDP, FX and NBS job data."/>
+<meta property="og:title" content="NaijaMetrics — Nigeria Economic Intelligence"/>
+<meta property="og:description" content="Live Nigerian macro data — World Bank, Frankfurter FX, NBS Survey 2024."/>
+<meta name="theme-color" content="#05080A"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Azeret+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-
 <style>
 :root{
-  --bg:#05080A;
-  --bg2:#091014;
-  --panel:#0D1317;
-  --panel2:#111920;
-  --panel3:#151F26;
-  --text:#F4F8F6;
-  --muted:#6B7B82;
-  --border:rgba(255,255,255,0.08);
-  --border2:rgba(255,255,255,0.14);
-  --accent:#00D46A;
-  --accent2:#008751;
+  --bg:#04080B;
+  --bg2:#070D11;
+  --panel:#0C1419;
+  --panel2:#101B22;
+  --panel3:#14212A;
+  --text:#EDF4F0;
+  --muted:#586870;
+  --border:rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.13);
+  --green:#008751;
+  --lime:#00D46A;
   --danger:#FF5468;
-  --warning:#F5C518;
-  --info:#38BDF8;
-  --good:#22C55E;
-  --bad:#EF4444;
-  --mono:'IBM Plex Mono',monospace;
-  --body:'Inter',system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  --heading:'Space Grotesk',var(--body);
+  --gold:#F5C518;
+  --blue:#38BDF8;
+  --brig:'Bricolage Grotesque',system-ui,sans-serif;
+  --mono:'Azeret Mono','IBM Plex Mono',monospace;
 }
-
 html[data-theme="light"]{
-  --bg:#F5F7F8;
-  --bg2:#EEF3F4;
-  --panel:#FFFFFF;
-  --panel2:#F8FAFB;
-  --panel3:#F2F6F8;
-  --text:#0B1114;
-  --muted:#60707A;
-  --border:rgba(15,23,42,0.08);
-  --border2:rgba(15,23,42,0.14);
-  --accent:#0B8F4C;
-  --accent2:#0A6E3D;
-  --danger:#E11D48;
-  --warning:#B45309;
-  --info:#0284C7;
-  --good:#16A34A;
-  --bad:#DC2626;
+  --bg:#F2F6F4;--bg2:#EAF0EE;--panel:#FFFFFF;--panel2:#F6FAF8;--panel3:#EEF4F1;
+  --text:#0B1114;--muted:#58707A;--border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.13);
+  --lime:#007A3D;--danger:#D63650;--gold:#A07C0A;--blue:#0369A1;
 }
-
-*,
-*::before,
-*::after{box-sizing:border-box}
-
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{
-  margin:0;
-  background:
-    radial-gradient(1200px 700px at 20% -10%, rgba(0,212,106,0.08), transparent 55%),
-    radial-gradient(900px 600px at 100% 0%, rgba(56,189,248,0.06), transparent 50%),
-    linear-gradient(180deg,var(--bg),var(--bg2));
-  color:var(--text);
-  font-family:var(--body);
-  overflow-x:hidden;
+  background:var(--bg);color:var(--text);font-family:var(--mono);
+  font-size:13px;line-height:1.65;overflow-x:hidden;cursor:none;
 }
-
 a{color:inherit;text-decoration:none}
-button,input{font:inherit}
-img,svg{display:block;max-width:100%}
+button{font:inherit;cursor:none}
 
-@media (pointer:fine){
-  body{cursor:none}
-  a,button,.tab,.theme-toggle,.refresh-btn,.range-btn,.chip{cursor:none}
-}
-
-#cursor,
-#cursor-ring{
-  position:fixed;
-  left:0;
-  top:0;
-  transform:translate(-50%,-50%);
-  pointer-events:none;
-  z-index:9999;
-  display:none;
-}
-#cursor{
-  width:9px;
-  height:9px;
-  border-radius:50%;
-  background:var(--accent);
-  mix-blend-mode:exclusion;
-}
-#cursor-ring{
-  width:34px;
-  height:34px;
-  border:1px solid rgba(0,212,106,0.35);
-  border-radius:50%;
-  transition:width .16s ease,height .16s ease,border-color .16s ease;
+/* ── PARTICLE CANVAS ── */
+#particleCanvas{
+  position:fixed;inset:0;pointer-events:none;z-index:9998;
 }
 
-@media (pointer:fine){
-  #cursor,#cursor-ring{display:block}
-}
-
-.shell{
-  width:min(1400px, calc(100% - 2rem));
-  margin:0 auto;
-  padding:1rem 0 3rem;
-}
-
+/* ── NAV ── */
 .topbar{
-  position:sticky;
-  top:0.75rem;
-  z-index:50;
-  backdrop-filter:blur(18px);
-  background:color-mix(in srgb, var(--panel) 84%, transparent);
-  border:1px solid var(--border);
-  border-radius:22px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:1rem;
-  padding:0.95rem 1.1rem;
-  box-shadow:0 18px 55px rgba(0,0,0,0.18);
+  position:sticky;top:.75rem;z-index:200;
+  margin:.75rem 1.5rem 0;
+  background:color-mix(in srgb,var(--panel) 85%,transparent);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--border);border-radius:20px;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  padding:.85rem 1.1rem;
+  box-shadow:0 16px 50px rgba(0,0,0,0.18);
 }
-
-.brand{
-  display:flex;
-  align-items:center;
-  gap:.8rem;
-  min-width:0;
-}
-.flag{
-  width:30px;height:20px;border-radius:6px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr 1fr;flex:none;
-  border:1px solid var(--border2);
-}
+.brand{display:flex;align-items:center;gap:.7rem}
+.flag{width:28px;height:19px;border-radius:5px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid var(--border2);flex-shrink:0}
 .flag span:nth-child(1){background:#008751}
-.flag span:nth-child(2){background:#FFFFFF}
-.flag span:nth-child(3){background:#000000}
-.brand h1{
-  font-family:var(--heading);
-  font-size:1.05rem;
-  margin:0;
-  letter-spacing:-0.03em;
-}
-.brand h1 em{font-style:normal;color:var(--accent)}
+.flag span:nth-child(2){background:#fff}
+.flag span:nth-child(3){background:#008751}
+.brand-name{font-family:var(--brig);font-size:1.1rem;font-weight:800;letter-spacing:-0.04em}
+.brand-name em{font-style:normal;color:var(--lime)}
+.nav-links{display:flex;align-items:center;gap:.85rem;flex-wrap:wrap;justify-content:flex-end}
+.nav-links a{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);transition:color .2s}
+.nav-links a:hover{color:var(--text)}
+.live-pill{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .7rem;border-radius:999px;background:rgba(0,212,106,0.07);border:1px solid rgba(0,212,106,0.18);color:var(--lime);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
+.dot-anim{width:6px;height:6px;border-radius:50%;background:var(--lime);animation:dotpulse 2s infinite}
+@keyframes dotpulse{0%{box-shadow:0 0 0 0 rgba(0,212,106,.5)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+.icon-btn{border:1px solid var(--border2);background:var(--panel2);color:var(--text);border-radius:12px;padding:.6rem .85rem;font-size:.7rem;transition:transform .18s,border-color .18s}
+.icon-btn:hover{transform:translateY(-1px);border-color:var(--lime)}
 
-.nav{
-  display:flex;
-  align-items:center;
-  gap:.9rem;
-  flex-wrap:wrap;
-  justify-content:flex-end;
-}
-.nav a{
-  font-size:.72rem;
-  color:var(--muted);
-  text-transform:uppercase;
-  letter-spacing:.13em;
-}
-.nav a:hover{color:var(--text)}
+/* ── TICKER ── */
+.ticker{background:var(--green);overflow:hidden;padding:.42rem 0;border-bottom:1px solid rgba(0,0,0,.25)}
+.ticker-inner{display:flex;gap:2.5rem;white-space:nowrap;animation:tickslide 55s linear infinite}
+@keyframes tickslide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.ticker-inner span{font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.85);display:inline-flex;align-items:center;gap:.55rem}
+.ticker-inner span::before{content:'★';font-size:.45rem;opacity:.65}
 
-.live-pill{
-  display:inline-flex;
-  align-items:center;
-  gap:.45rem;
-  padding:.42rem .75rem;
-  border-radius:999px;
-  background:rgba(0,212,106,0.08);
-  border:1px solid rgba(0,212,106,0.18);
-  color:var(--accent);
-  font-size:.65rem;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-  white-space:nowrap;
-}
-.dot{
-  width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 rgba(0,212,106,.4);animation:pulse 2s infinite;
-}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(0,212,106,.4)}70%{box-shadow:0 0 0 10px transparent}100%{box-shadow:0 0 0 0 transparent}}
+/* ── SHELL ── */
+.shell{width:min(1400px,calc(100% - 3rem));margin:0 auto;padding:1.25rem 0 4rem}
 
-.theme-toggle,.refresh-btn{
-  border:1px solid var(--border2);
-  background:var(--panel2);
-  color:var(--text);
-  border-radius:14px;
-  padding:.7rem .9rem;
-  transition:transform .18s ease,border-color .18s ease,background .18s ease;
-}
-.theme-toggle:hover,.refresh-btn:hover{transform:translateY(-1px);border-color:var(--accent)}
-.theme-toggle{min-width:108px}
-.refresh-btn{display:inline-flex;align-items:center;gap:.55rem}
+/* ── HERO ── */
+.hero{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(300px,.85fr);gap:1.25rem;margin-bottom:1rem}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:24px}
+.hero-main{padding:2.25rem 2rem;position:relative;overflow:hidden}
+.hero-main::after{content:'';position:absolute;right:-80px;bottom:-80px;width:380px;height:380px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,106,.1),transparent 65%);pointer-events:none}
+.kicker{display:flex;align-items:center;gap:.8rem;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:1.1rem}
+.kicker-line{width:2.5rem;height:1px;background:var(--lime)}
+.hero-h1{font-family:var(--brig);font-size:clamp(3.5rem,8vw,7rem);font-weight:800;line-height:.88;letter-spacing:-0.05em;margin-bottom:1.5rem}
+.hero-h1 em{font-style:normal;color:transparent;-webkit-text-stroke:1.5px var(--lime)}
+.hero-desc{font-size:.8rem;color:var(--muted);max-width:55ch;line-height:1.95;margin-bottom:2rem}
+.hero-desc strong{color:var(--text);font-weight:500}
+.hero-ctas{display:flex;gap:.85rem;flex-wrap:wrap;align-items:center;margin-bottom:1.4rem}
+.btn-fill{background:var(--lime);color:#000;font-family:var(--brig);font-weight:700;border:none;border-radius:12px;padding:.85rem 1.35rem;font-size:.78rem;transition:transform .2s,box-shadow .2s}
+.btn-fill:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,212,106,.25)}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text);border-radius:12px;padding:.85rem 1.35rem;font-size:.78rem;transition:transform .2s,border-color .2s}
+.btn-ghost:hover{transform:translateY(-2px);border-color:var(--lime)}
+.hero-chips{display:flex;gap:.55rem;flex-wrap:wrap}
+.chip{padding:.38rem .65rem;background:var(--panel2);border:1px solid var(--border);border-radius:999px;font-size:.62rem;color:var(--muted)}
+.status-line{margin-top:1rem;font-size:.68rem;color:var(--muted)}
 
-.hero{
-  padding:1.35rem 0 1rem;
-  display:grid;
-  grid-template-columns:minmax(0,1.4fr) minmax(300px,.9fr);
-  gap:1.25rem;
-  align-items:stretch;
-}
+/* ── HERO SIDE ── */
+.hero-side{display:grid;gap:1rem}
+.map-card{padding:1.1rem}
+.map-wrap{position:relative;width:100%;aspect-ratio:1;display:grid;place-items:center}
+.map-ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(0,212,106,.1);animation:mapring 4s ease-in-out infinite}
+.map-ring:nth-child(2){inset:14%;animation-delay:.7s}
+.map-ring:nth-child(3){inset:28%;animation-delay:1.4s}
+@keyframes mapring{0%,100%{opacity:.3}50%{opacity:.75}}
+.map-svg{width:76%;height:auto;filter:drop-shadow(0 0 28px rgba(0,212,106,.18))}
+.map-pin{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 0 rgba(0,212,106,.55);animation:dotpulse 2s infinite;top:44%;left:47%}
+.feed-card{padding:1rem;display:grid;gap:.6rem}
+.feed-row{display:flex;justify-content:space-between;align-items:center;padding:.62rem .75rem;border-radius:14px;background:var(--panel2);border:1px solid var(--border)}
+.feed-label{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.feed-val{font-family:var(--brig);font-size:.92rem;font-weight:700;letter-spacing:-0.03em}
 
-.card{
-  background:linear-gradient(180deg, color-mix(in srgb, var(--panel) 98%, transparent), color-mix(in srgb, var(--panel2) 100%, transparent));
-  border:1px solid var(--border);
-  border-radius:26px;
-  box-shadow:0 16px 50px rgba(0,0,0,0.12);
-}
+/* ── KPI GRID ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin-bottom:1rem}
+.kpi{padding:1.5rem;position:relative;overflow:hidden;transition:transform .2s}
+.kpi:hover{transform:translateY(-2px)}
+.kpi::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;background:var(--kpi-accent,var(--lime));transform:scaleX(0);transform-origin:left;transition:transform .35s}
+.kpi:hover::before{transform:scaleX(1)}
+.kpi-icon{font-size:1.1rem;margin-bottom:.5rem;opacity:.75}
+.kpi-label{font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:.45rem}
+.kpi-val{font-family:var(--brig);font-size:clamp(1.8rem,4vw,3rem);font-weight:800;line-height:1;letter-spacing:-0.05em;margin-bottom:.25rem}
+.kpi-sub{font-size:.62rem;color:var(--muted);line-height:1.5;min-height:2.2em;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.delta{display:inline-flex;align-items:center;gap:.15rem;font-size:.6rem;padding:.18rem .4rem;border-radius:999px;background:var(--panel2);border:1px solid var(--border)}
+.delta.up{color:var(--danger)}.delta.down{color:var(--lime)}.delta.flat{color:var(--muted)}
+.col-red{color:var(--danger)}.col-lime{color:var(--lime)}.col-gold{color:var(--gold)}.col-blue{color:var(--blue)}
 
-.hero-main{
-  padding:2rem;
-  position:relative;
-  overflow:hidden;
-}
-.hero-main::after{
-  content:'';
-  position:absolute;
-  inset:auto -10% -35% auto;
-  width:420px;
-  height:420px;
-  border-radius:50%;
-  background:radial-gradient(circle, rgba(0,212,106,0.12), transparent 63%);
-  pointer-events:none;
-}
-.kicker{
-  display:flex;
-  align-items:center;
-  gap:.8rem;
-  font-size:.68rem;
-  letter-spacing:.18em;
-  text-transform:uppercase;
-  color:var(--muted);
-  margin-bottom:1rem;
-}
-.kicker .line{width:2.8rem;height:1px;background:var(--accent)}
-.hero h2{
-  margin:0;
-  max-width:11ch;
-  font-family:var(--heading);
-  font-size:clamp(3.3rem, 7vw, 6.2rem);
-  line-height:.9;
-  letter-spacing:-0.05em;
-}
-.hero h2 em{
-  font-style:normal;
-  color:transparent;
-  -webkit-text-stroke:1px var(--accent);
-}
-.hero p{
-  max-width:60ch;
-  color:var(--muted);
-  line-height:1.9;
-  margin:1.25rem 0 1.6rem;
-  font-size:.92rem;
-}
-.hero-actions{
-  display:flex;
-  gap:.85rem;
-  flex-wrap:wrap;
-  align-items:center;
-  margin-bottom:1.4rem;
-}
-.btn-primary,.btn-ghost,.chip,.range-btn{
-  border-radius:14px;
-  transition:transform .18s ease, background .18s ease, border-color .18s ease, color .18s ease;
-}
-.btn-primary{
-  border:none;
-  background:var(--accent);
-  color:#000;
-  font-weight:700;
-  padding:.88rem 1.2rem;
-}
-.btn-primary:hover{transform:translateY(-1px)}
-.btn-ghost{
-  border:1px solid var(--border2);
-  background:transparent;
-  color:var(--text);
-  padding:.88rem 1.2rem;
-}
-.btn-ghost:hover{transform:translateY(-1px);border-color:var(--accent);background:color-mix(in srgb, var(--panel2) 80%, transparent)}
+/* ── SECTIONS ── */
+.section{padding:1.75rem;margin-bottom:1rem}
+.sec-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.sec-title{font-family:var(--brig);font-size:clamp(1.3rem,3vw,2rem);font-weight:800;letter-spacing:-0.04em;margin-bottom:.25rem}
+.sec-desc{font-size:.72rem;color:var(--muted);max-width:44ch;text-align:right;line-height:1.8}
 
-.hero-meta{
-  display:flex;
-  gap:.6rem;
-  flex-wrap:wrap;
-}
-.chip{
-  padding:.45rem .7rem;
-  background:var(--panel2);
-  border:1px solid var(--border);
-  font-size:.67rem;
-  color:var(--muted);
-  letter-spacing:.06em;
-}
-.hero-side{
-  padding:1.2rem;
-  display:grid;
-  gap:1rem;
-}
-.side-map,.side-feed{
-  background:var(--panel2);
-  border:1px solid var(--border);
-  border-radius:22px;
-  padding:1rem;
-}
-.side-feed{
-  display:grid;
-  gap:.7rem;
-}
-.feed-row{
-  display:flex;
-  justify-content:space-between;
-  gap:1rem;
-  align-items:center;
-  padding:.68rem .75rem;
-  border-radius:16px;
-  background:color-mix(in srgb, var(--panel) 88%, transparent);
-  border:1px solid var(--border);
-}
-.feed-row span{
-  font-size:.66rem;
-  text-transform:uppercase;
-  letter-spacing:.13em;
-  color:var(--muted);
-}
-.feed-row strong{
-  font-family:var(--heading);
-  font-size:1rem;
-  letter-spacing:-0.03em;
-}
-.map-box{
-  width:100%;
-  aspect-ratio:1;
-  position:relative;
-  display:grid;
-  place-items:center;
-}
-.map-ring{
-  position:absolute;
-  inset:0;
-  border-radius:50%;
-  border:1px solid rgba(0,212,106,0.12);
-  animation:ring 4s ease-in-out infinite;
-}
-.map-ring:nth-child(2){inset:14%;animation-delay:.6s}
-.map-ring:nth-child(3){inset:28%;animation-delay:1.2s}
-@keyframes ring{0%,100%{opacity:.35}50%{opacity:.8}}
-.map-svg{
-  width:78%;
-  height:auto;
-  filter:drop-shadow(0 0 30px rgba(0,212,106,.16));
-}
-.pin{
-  position:absolute;
-  width:8px;height:8px;border-radius:50%;
-  background:var(--accent);
-  box-shadow:0 0 0 0 rgba(0,212,106,.55);
-  animation:pulse 2s infinite;
-}
+/* ── CONTROLS ── */
+.controls{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem}
+.btn-group{display:flex;gap:.5rem;flex-wrap:wrap}
+.range-btn{border:1px solid var(--border2);background:var(--panel2);color:var(--muted);border-radius:10px;padding:.55rem .85rem;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;transition:all .18s}
+.range-btn.active{color:var(--lime);border-color:rgba(0,212,106,.28);background:rgba(0,212,106,.07)}
+.range-btn:hover:not(.active){color:var(--text);border-color:var(--border2)}
+.ctrl-meta{font-size:.68rem;color:var(--muted)}
 
-.grid{
-  display:grid;
-  gap:1rem;
-}
-.stats{
-  grid-template-columns:repeat(4, minmax(0,1fr));
-  margin-top:1rem;
-}
-.stat{
-  padding:1.25rem;
-  position:relative;
-  overflow:hidden;
-}
-.stat::before{
-  content:'';
-  position:absolute;left:0;top:0;width:100%;height:2px;
-  background:var(--accent);
-  transform:scaleX(0);
-  transform-origin:left;
-  transition:transform .35s ease;
-}
-.stat:hover::before{transform:scaleX(1)}
-.stat .icon{font-size:1.15rem;margin-bottom:.55rem}
-.label{
-  font-size:.66rem;
-  text-transform:uppercase;
-  letter-spacing:.18em;
-  color:var(--muted);
-  margin-bottom:.55rem;
-}
-.value{
-  font-family:var(--heading);
-  font-size:clamp(2rem, 4vw, 3.2rem);
-  line-height:1;
-  letter-spacing:-0.05em;
-  margin-bottom:.2rem;
-}
-.sub{
-  color:var(--muted);
-  font-size:.72rem;
-  line-height:1.6;
-  min-height:2.4em;
-}
-.up{color:var(--good)}
-.down{color:var(--bad)}
-.flat{color:var(--text)}
+/* ── CHART GRIDS ── */
+.chart-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin-bottom:1rem}
+.chart-3{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,.9fr);gap:1rem;margin-bottom:1rem}
+.chart-box{padding:1.35rem}
+.chart-top{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1rem}
+.chart-name{font-family:var(--brig);font-size:.98rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:.2rem}
+.chart-src{font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.badge{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;padding:.22rem .55rem;border-radius:999px;border:1px solid rgba(0,212,106,.2);color:var(--lime);background:rgba(0,212,106,.07);white-space:nowrap}
+.canvas-wrap{height:260px;position:relative}
+.canvas-wrap.tall{height:310px}
+canvas{width:100%!important;height:100%!important}
+.insight{margin-top:.85rem;font-size:.72rem;line-height:1.75;color:var(--muted)}
+.insight strong{color:var(--text);font-weight:500}
 
-.section{
-  margin-top:1rem;
-  padding:1.35rem;
-}
-.section-head{
-  display:flex;
-  justify-content:space-between;
-  gap:1rem;
-  align-items:flex-start;
-  margin-bottom:1rem;
-}
-.section-title{
-  margin:0;
-  font-family:var(--heading);
-  font-size:clamp(1.4rem, 3vw, 2.15rem);
-  letter-spacing:-0.04em;
-}
-.section-desc{
-  margin:0;
-  max-width:48ch;
-  color:var(--muted);
-  font-size:.84rem;
-  line-height:1.75;
-  text-align:right;
-}
+/* ── FX ── */
+.fx-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:1rem;margin-bottom:1rem}
+.rate-box{padding:1.5rem;display:grid;gap:.85rem}
+.rate-big{font-family:var(--brig);font-size:clamp(2rem,5vw,4rem);font-weight:800;line-height:1;letter-spacing:-0.06em}
+.rate-pills{display:flex;gap:.5rem;flex-wrap:wrap}
+.rate-pill{padding:.35rem .65rem;border-radius:999px;font-size:.62rem;border:1px solid var(--border);color:var(--muted);background:var(--panel2)}
 
-.controls{
-  display:flex;
-  justify-content:space-between;
-  gap:1rem;
-  align-items:center;
-  flex-wrap:wrap;
-  margin-bottom:1rem;
-}
-.group{
-  display:flex;
-  flex-wrap:wrap;
-  gap:.55rem;
-}
-.range-btn{
-  border:1px solid var(--border2);
-  background:var(--panel2);
-  color:var(--muted);
-  padding:.62rem .9rem;
-  letter-spacing:.12em;
-  text-transform:uppercase;
-  font-size:.62rem;
-}
-.range-btn.active{
-  color:var(--accent);
-  border-color:rgba(0,212,106,.28);
-  background:rgba(0,212,106,.08);
-}
-.meta{
-  color:var(--muted);
-  font-size:.72rem;
-  line-height:1.5;
-}
+/* ── MACRO PULSE ── */
+.pulse-box{display:grid;place-items:center;text-align:center;height:100%;padding:2rem}
+.pulse-num{font-family:var(--brig);font-size:clamp(2.5rem,6vw,4.5rem);font-weight:800;letter-spacing:-0.06em;margin-bottom:.5rem}
+.pulse-label{font-size:.7rem;color:var(--muted);max-width:28ch;line-height:1.7}
 
-.chart-grid-2{
-  display:grid;
-  grid-template-columns:repeat(2, minmax(0,1fr));
-  gap:1rem;
-}
-.chart-grid-3{
-  display:grid;
-  grid-template-columns:minmax(0,1.35fr) minmax(0,.95fr);
-  gap:1rem;
-}
-.chart-card{
-  padding:1.15rem;
-}
-.chart-top{
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-start;
-  gap:1rem;
-  margin-bottom:.85rem;
-}
-.chart-name{
-  margin:0;
-  font-family:var(--heading);
-  font-size:1rem;
-  letter-spacing:-0.03em;
-}
-.chart-src{
-  color:var(--muted);
-  font-size:.65rem;
-  text-transform:uppercase;
-  letter-spacing:.14em;
-  margin-top:.2rem;
-}
-.badge{
-  font-size:.58rem;
-  letter-spacing:.14em;
-  text-transform:uppercase;
-  padding:.28rem .55rem;
-  border-radius:999px;
-  border:1px solid rgba(0,212,106,.18);
-  color:var(--accent);
-  background:rgba(0,212,106,.08);
-  white-space:nowrap;
-}
-.canvas-wrap{
-  height:280px;
-}
-.canvas-wrap.tall{height:330px}
-canvas{width:100% !important;height:100% !important}
-.insight{
-  margin-top:.9rem;
-  font-size:.76rem;
-  line-height:1.7;
-  color:var(--muted);
-}
-.insight strong{color:var(--text)}
+/* ── FYP ── */
+.fyp-header{background:color-mix(in srgb,var(--panel2) 80%,transparent);border:1px solid var(--border2);border-left:3px solid var(--lime);border-radius:0 16px 16px 0;padding:1.1rem 1.35rem;margin-bottom:1.25rem;display:flex;align-items:flex-start;gap:.85rem}
+.fyp-badge{background:var(--lime);color:#000;font-family:var(--brig);font-weight:700;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;padding:.25rem .6rem;border-radius:6px;white-space:nowrap;margin-top:.05rem;flex-shrink:0}
+.fyp-text{font-size:.7rem;color:var(--muted);line-height:1.8}
+.fyp-text strong{color:var(--text);font-weight:500}
 
-.fx-hero{
-  display:grid;
-  grid-template-columns:1.05fr .95fr;
-  gap:1rem;
-  align-items:stretch;
-}
-.rate-box{
-  padding:1.25rem;
-  display:grid;
-  gap:.9rem;
-}
-.rate-big{
-  font-family:var(--heading);
-  font-size:clamp(2.2rem, 5vw, 4rem);
-  line-height:1;
-  letter-spacing:-0.06em;
-}
-.rate-mini{
-  display:flex;
-  gap:.65rem;
-  flex-wrap:wrap;
-}
-.mini-pill{
-  padding:.42rem .62rem;
-  border-radius:999px;
-  font-size:.66rem;
-  border:1px solid var(--border);
-  color:var(--muted);
-  background:var(--panel2);
-}
+/* ── Q TABS ── */
+.q-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.85rem;margin-bottom:1rem}
+.q-tab{padding:1.1rem;background:var(--panel2);border:1px solid var(--border);border-radius:18px;transition:all .2s;border-bottom:2px solid transparent}
+.q-tab:not([data-nodrop]):hover{transform:translateY(-2px);border-color:rgba(0,212,106,.22)}
+.q-tab.active{background:rgba(0,212,106,.06);border-color:rgba(0,212,106,.22);border-bottom-color:var(--lime)}
+.q-num{font-family:var(--brig);font-size:1.75rem;font-weight:800;line-height:1;color:var(--muted);margin-bottom:.2rem;transition:color .2s}
+.q-tab.active .q-num{color:var(--lime)}
+.q-lbl{font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.q-sub{font-size:.72rem;color:var(--text);margin-top:.25rem}
 
-.q-tabs{
-  display:grid;
-  grid-template-columns:repeat(4, minmax(0,1fr));
-  gap:1rem;
-  margin-bottom:1rem;
-}
-.tab{
-  padding:1rem;
-  background:var(--panel2);
-  border:1px solid var(--border);
-  border-radius:20px;
-  transition:transform .18s ease,border-color .18s ease,background .18s ease;
-}
-.tab:hover{transform:translateY(-1px);border-color:rgba(0,212,106,.25)}
-.tab.active{
-  background:rgba(0,212,106,.07);
-  border-color:rgba(0,212,106,.22);
-}
-.tab .big{
-  font-family:var(--heading);
-  font-size:1.8rem;
-  line-height:1;
-  margin-bottom:.2rem;
-}
-.tab .small{
-  color:var(--muted);
-  font-size:.66rem;
-  text-transform:uppercase;
-  letter-spacing:.14em;
-}
-.tab .desc{
-  color:var(--text);
-  font-size:.76rem;
-  margin-top:.3rem;
-}
+/* ── TABLE ── */
+.data-tbl{width:100%;border-collapse:collapse;margin-top:.75rem}
+.data-tbl th{font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);padding:.7rem .65rem;text-align:left;border-bottom:1px solid var(--border)}
+.data-tbl td{padding:.8rem .65rem;font-size:.72rem;border-bottom:1px solid var(--border);vertical-align:middle}
+.data-tbl tr:hover td{background:color-mix(in srgb,var(--panel2) 70%,transparent)}
+.bar-bg{width:160px;height:5px;border-radius:999px;background:var(--border);overflow:hidden}
+.bar-fill{height:100%;border-radius:999px;background:var(--lime);transition:width .8s ease}
+.pct-num{font-family:var(--brig);font-weight:700;font-size:.95rem;color:var(--lime);min-width:3.5rem}
 
-.table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:.8rem;
-}
-.table th,.table td{
-  border-bottom:1px solid var(--border);
-  text-align:left;
-  padding:.85rem .7rem;
-  font-size:.76rem;
-}
-.table th{
-  color:var(--muted);
-  font-size:.6rem;
-  text-transform:uppercase;
-  letter-spacing:.16em;
-}
-.table tr:hover td{background:color-mix(in srgb, var(--panel2) 84%, transparent)}
-.bar{
-  width:170px;height:6px;border-radius:999px;background:var(--border);overflow:hidden
-}
-.bar > span{
-  display:block;height:100%;border-radius:999px;background:var(--accent)
-}
+/* ── METHOD ── */
+.method-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+.method-card{padding:1.35rem}
+.method-icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--panel2);border:1px solid var(--border);font-size:1.05rem;margin-bottom:1rem}
+.method-name{font-family:var(--brig);font-size:.95rem;font-weight:700;margin-bottom:.5rem}
+.method-body{font-size:.72rem;color:var(--muted);line-height:1.85}
 
-.methods{
-  display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
-  gap:1rem;
-}
-.method{
-  padding:1.2rem;
-}
-.method .micon{
-  width:42px;height:42px;border-radius:14px;
-  display:grid;place-items:center;
-  background:var(--panel2);
-  border:1px solid var(--border);
-  margin-bottom:1rem;
-  font-size:1.1rem;
-}
-.method h3{
-  margin:0 0 .5rem;
-  font-family:var(--heading);
-  font-size:1rem;
-}
-.method p{
-  margin:0;
-  color:var(--muted);
-  line-height:1.8;
-  font-size:.78rem;
-}
+/* ── FOOTER ── */
+.footer{padding:1.5rem 1.75rem 2rem;margin-bottom:0}
+.footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:1.5rem;margin-bottom:1.25rem}
+.footer h4{font-family:var(--brig);font-size:1rem;font-weight:700;margin-bottom:.6rem}
+.footer p{font-size:.72rem;color:var(--muted);line-height:1.85}
+.footer-links{display:flex;flex-direction:column;gap:.4rem}
+.footer-links a{font-size:.72rem;color:var(--muted);transition:color .18s}
+.footer-links a:hover{color:var(--lime)}
+.footer-bottom{padding-top:1rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem;font-size:.62rem;color:var(--muted)}
 
-.footer{
-  margin:1rem 0 0;
-  padding:1.3rem 1.35rem 2rem;
-  color:var(--muted);
-}
-.footer-grid{
-  display:grid;
-  grid-template-columns:1.4fr 1fr 1fr;
-  gap:1rem;
-}
-.footer h4{
-  margin:0 0 .55rem;
-  font-family:var(--heading);
-  color:var(--text);
-}
-.footer a{
-  display:block;
-  color:var(--muted);
-  font-size:.8rem;
-  padding:.22rem 0;
-}
-.footer a:hover{color:var(--accent)}
-.footer-bottom{
-  margin-top:1rem;
-  padding-top:1rem;
-  border-top:1px solid var(--border);
-  display:flex;
-  justify-content:space-between;
-  gap:1rem;
-  flex-wrap:wrap;
-  font-size:.72rem;
-}
+/* ── REVEAL ── */
+.reveal{opacity:0;transform:translateY(16px);transition:opacity .55s ease,transform .55s ease}
+.reveal.show{opacity:1;transform:none}
 
-.reveal{
-  opacity:0;
-  transform:translateY(16px);
-  transition:opacity .55s ease, transform .55s ease;
-}
-.reveal.show{
-  opacity:1;
-  transform:none;
-}
-
-.loading{
-  font-size:.72rem;
-  color:var(--muted);
-}
-
-@media (max-width:1100px){
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){
   .hero{grid-template-columns:1fr}
   .hero-side{display:none}
-  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .chart-grid-2,.chart-grid-3,.fx-hero,.methods,.footer-grid{grid-template-columns:1fr}
+  .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .chart-2,.chart-3,.fx-grid,.method-grid,.footer-grid{grid-template-columns:1fr}
   .q-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .section-head{flex-direction:column}
-  .section-desc{text-align:left;max-width:none}
+  .sec-desc{text-align:left;max-width:none}
 }
-
-@media (max-width:720px){
-  .shell{width:min(100% - 1rem, 1400px)}
-  .topbar,.hero-main,.section,.footer{padding:1rem}
-  .nav{gap:.55rem}
-  .stats{grid-template-columns:1fr}
+@media(max-width:720px){
+  .shell{width:calc(100% - 1.5rem)}
+  .topbar{padding:.75rem;margin:.5rem .75rem 0}
+  .section,.hero-main,.footer{padding:1.25rem}
+  .kpi-grid{grid-template-columns:1fr}
   .q-tabs{grid-template-columns:1fr}
-  .canvas-wrap,.canvas-wrap.tall{height:250px}
-  .bar{width:120px}
+  .canvas-wrap,.canvas-wrap.tall{height:220px}
+  .bar-bg{width:100px}
 }
-
-@media (prefers-reduced-motion:reduce){
-  html{scroll-behavior:auto}
-  *,*::before,*::after{
-    animation:none !important;
-    transition:none !important;
-  }
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
 }
 </style>
 </head>
 <body>
-<div id="cursor"></div>
-<div id="cursor-ring"></div>
+<canvas id="particleCanvas"></canvas>
+
+<!-- NAV -->
+<header class="topbar">
+  <div class="brand">
+    <div class="flag"><span></span><span></span><span></span></div>
+    <div class="brand-name">Naija<em>Metrics</em></div>
+  </div>
+  <nav class="nav-links">
+    <a href="#macro">Macro</a>
+    <a href="#fx">FX</a>
+    <a href="#employment">Jobs</a>
+    <a href="#methodology">Method</a>
+    <span class="live-pill"><span class="dot-anim"></span><span id="liveLabel">Live sync</span></span>
+    <button class="icon-btn" id="themeBtn" type="button">☾ Dark</button>
+    <button class="icon-btn" id="refreshBtn" type="button">↻ Refresh</button>
+  </nav>
+</header>
+
+<!-- TICKER -->
+<div class="ticker"><div class="ticker-inner" id="tickerInner"></div></div>
 
 <div class="shell">
-  <header class="topbar">
-    <div class="brand">
-      <div class="flag"><span></span><span></span><span></span></div>
-      <h1>Naija<em>Metrics</em></h1>
-    </div>
-    <nav class="nav">
-      <a href="#macro">Macro</a>
-      <a href="#fx">FX</a>
-      <a href="#employment">Jobs</a>
-      <a href="#methodology">Method</a>
-      <span class="live-pill"><span class="dot"></span><span id="liveLabel">Live sync</span></span>
-      <button class="theme-toggle" id="themeBtn" type="button">☾ Dark</button>
-      <button class="refresh-btn" id="refreshBtn" type="button">↻ Refresh</button>
-    </nav>
-  </header>
-
-  <section class="hero">
+  <!-- HERO -->
+  <section class="hero" style="margin-top:1.25rem">
     <div class="hero-main card reveal">
-      <div class="kicker"><span class="line"></span> Nigeria Economic Intelligence · auto refresh</div>
-      <h2>NIGERIA<br>BY THE<br><em>NUMBERS.</em></h2>
-      <p>
-        A cleaner way to read Nigeria’s macro picture: inflation, GDP growth, unemployment, and live FX,
-        all pulled from public APIs and refreshed automatically inside one fast dashboard.
+      <div class="kicker"><span class="kicker-line"></span>Nigeria Economic Intelligence · Auto Refresh</div>
+      <h1 class="hero-h1">NIGERIA<br>BY THE<br><em>NUMBERS.</em></h1>
+      <p class="hero-desc">
+        <strong>The cleanest Nigerian economic dashboard on the internet.</strong>
+        Live inflation, GDP, FX rates and NBS employment data — World Bank + Frankfurter API,
+        refreshed automatically. No PDFs. No government portals. No friction.
       </p>
-      <div class="hero-actions">
-        <a class="btn-primary" href="#macro">Explore dashboard</a>
+      <div class="hero-ctas">
+        <a class="btn-fill" href="#macro">Explore dashboard</a>
         <a class="btn-ghost" href="https://github.com/amananalytics" target="_blank" rel="noopener">View source ↗</a>
       </div>
-      <div class="hero-meta">
-        <span class="chip">World Bank macro series</span>
+      <div class="hero-chips">
+        <span class="chip">World Bank macro</span>
         <span class="chip">Frankfurter FX feed</span>
         <span class="chip">Dark / Light mode</span>
-        <span class="chip">GitHub Pages friendly</span>
+        <span class="chip">Auto-refresh 15 min</span>
+        <span class="chip">GitHub Pages</span>
       </div>
-      <div class="loading" id="statusLine" style="margin-top:1rem">Loading live data…</div>
+      <div class="status-line" id="statusLine">Loading live data…</div>
     </div>
-
     <div class="hero-side reveal">
-      <div class="side-map card">
-        <div class="map-box">
-          <div class="map-ring"></div>
-          <div class="map-ring"></div>
-          <div class="map-ring"></div>
-
-          <svg class="map-svg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-label="Nigeria map">
+      <div class="map-card card">
+        <div class="map-wrap">
+          <div class="map-ring"></div><div class="map-ring"></div><div class="map-ring"></div>
+          <svg class="map-svg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-label="Nigeria map outline">
             <defs>
               <linearGradient id="mg" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stop-color="#00D46A" stop-opacity="0.55"/>
+                <stop offset="0%" stop-color="#00D46A" stop-opacity="0.5"/>
                 <stop offset="100%" stop-color="#00D46A" stop-opacity="0.08"/>
               </linearGradient>
             </defs>
@@ -790,831 +311,648 @@ canvas{width:100% !important;height:100% !important}
               L82,198 L68,194 L55,185 L48,170 L48,152 L55,136 L62,120
               L66,102 L72,86 L82,70 L96,56 L110,46 Z"
               fill="url(#mg)" stroke="#00D46A" stroke-width="1.5" stroke-linejoin="round"/>
-            <circle cx="196" cy="188" r="5" fill="#00D46A"/>
-            <circle cx="120" cy="258" r="4" fill="#F5C518"/>
-            <circle cx="208" cy="90" r="3.5" fill="#38BDF8"/>
-            <circle cx="185" cy="300" r="3" fill="#FF5468"/>
-            <text x="206" y="186" font-size="8" fill="#00D46A" font-family="IBM Plex Mono,monospace">Abuja</text>
-            <text x="84" y="265" font-size="8" fill="#F5C518" font-family="IBM Plex Mono,monospace">Lagos</text>
-            <text x="215" y="89" font-size="8" fill="#38BDF8" font-family="IBM Plex Mono,monospace">Kano</text>
+            <path d="M190,25 L192,88 L198,148 M198,148 L258,140 M198,148 L148,158 M118,208 L198,202 L288,196" stroke="#00D46A" stroke-width="0.4" stroke-opacity="0.22" fill="none"/>
+            <circle cx="196" cy="188" r="5" fill="#00D46A" opacity=".9"/>
+            <circle cx="196" cy="188" r="13" fill="#00D46A" opacity=".1"/>
+            <circle cx="120" cy="258" r="4" fill="#F5C518" opacity=".85"/>
+            <circle cx="208" cy="90" r="3.5" fill="#38BDF8" opacity=".85"/>
+            <circle cx="185" cy="300" r="3" fill="#FF5468" opacity=".75"/>
+            <text x="206" y="186" font-size="8" fill="#00D46A" font-family="Azeret Mono,monospace">Abuja</text>
+            <text x="82" y="265" font-size="8" fill="#F5C518" font-family="Azeret Mono,monospace">Lagos</text>
+            <text x="215" y="89" font-size="8" fill="#38BDF8" font-family="Azeret Mono,monospace">Kano</text>
           </svg>
-          <div class="pin" style="top:44%;left:48%"></div>
+          <div class="map-pin"></div>
         </div>
       </div>
-
-      <div class="side-feed card">
-        <div class="feed-row"><span>Last refresh</span><strong id="lastRefresh">—</strong></div>
-        <div class="feed-row"><span>Macro source</span><strong>World Bank</strong></div>
-        <div class="feed-row"><span>FX source</span><strong>Frankfurter</strong></div>
-        <div class="feed-row"><span>Mode</span><strong id="modeText">Dark</strong></div>
+      <div class="feed-card card">
+        <div class="feed-row"><span class="feed-label">Last refresh</span><strong class="feed-val" id="lastRefresh">—</strong></div>
+        <div class="feed-row"><span class="feed-label">Macro source</span><strong class="feed-val">World Bank</strong></div>
+        <div class="feed-row"><span class="feed-label">FX source</span><strong class="feed-val">Frankfurter</strong></div>
+        <div class="feed-row"><span class="feed-label">Mode</span><strong class="feed-val" id="modeText">Dark</strong></div>
       </div>
     </div>
   </section>
 
-  <section class="grid stats">
-    <div class="stat card reveal" style="--accent:var(--danger)">
-      <div class="icon">📈</div>
-      <div class="label">Inflation</div>
-      <div class="value" id="kpiInf">—</div>
-      <div class="sub" id="subInf">Fetching…</div>
+  <!-- KPI -->
+  <div class="kpi-grid">
+    <div class="kpi card reveal" style="--kpi-accent:var(--danger)">
+      <div class="kpi-icon">📈</div>
+      <div class="kpi-label">Inflation Rate</div>
+      <div class="kpi-val col-red" id="kpiInf">—</div>
+      <div class="kpi-sub" id="subInf">Fetching…</div>
     </div>
-
-    <div class="stat card reveal" style="--accent:var(--accent)">
-      <div class="icon">🏦</div>
-      <div class="label">GDP Growth</div>
-      <div class="value" id="kpiGdp">—</div>
-      <div class="sub" id="subGdp">Fetching…</div>
+    <div class="kpi card reveal" style="--kpi-accent:var(--lime)">
+      <div class="kpi-icon">🏦</div>
+      <div class="kpi-label">GDP Growth</div>
+      <div class="kpi-val col-lime" id="kpiGdp">—</div>
+      <div class="kpi-sub" id="subGdp">Fetching…</div>
     </div>
-
-    <div class="stat card reveal" style="--accent:var(--warning)">
-      <div class="icon">💱</div>
-      <div class="label">USD / NGN</div>
-      <div class="value" id="kpiFx">—</div>
-      <div class="sub" id="subFx">Fetching…</div>
+    <div class="kpi card reveal" style="--kpi-accent:var(--gold)">
+      <div class="kpi-icon">💱</div>
+      <div class="kpi-label">USD / NGN</div>
+      <div class="kpi-val col-gold" id="kpiFx">—</div>
+      <div class="kpi-sub" id="subFx">Fetching…</div>
     </div>
-
-    <div class="stat card reveal" style="--accent:var(--info)">
-      <div class="icon">👷</div>
-      <div class="label">Unemployment</div>
-      <div class="value" id="kpiUnem">—</div>
-      <div class="sub" id="subUnem">Fetching…</div>
+    <div class="kpi card reveal" style="--kpi-accent:var(--blue)">
+      <div class="kpi-icon">👷</div>
+      <div class="kpi-label">Unemployment</div>
+      <div class="kpi-val col-blue" id="kpiUnem">—</div>
+      <div class="kpi-sub" id="subUnem">Fetching…</div>
     </div>
-  </section>
+  </div>
 
+  <!-- MACRO CHARTS -->
   <section class="section card reveal" id="macro">
-    <div class="section-head">
+    <div class="sec-head">
       <div>
-        <h3 class="section-title">Macroeconomic Trends</h3>
+        <div class="sec-title">Macroeconomic Trends</div>
       </div>
-      <p class="section-desc">
-        World Bank indicators rendered as clean time series. Macro refresh happens automatically on an interval,
-        and the range buttons let you switch between recent years and the full available history.
-      </p>
+      <p class="sec-desc">World Bank indicators rendered as clean time series. Range buttons let you switch between recent years and full history.</p>
     </div>
-
     <div class="controls">
-      <div class="group" id="macroRanges">
+      <div class="btn-group" id="macroRanges">
         <button class="range-btn active" data-range="5" type="button">5Y</button>
         <button class="range-btn" data-range="10" type="button">10Y</button>
         <button class="range-btn" data-range="all" type="button">All</button>
       </div>
-      <div class="meta" id="macroMeta">Showing last 5 annual points per indicator</div>
+      <div class="ctrl-meta" id="macroMeta">Showing last 5 annual points per indicator</div>
     </div>
-
-    <div class="chart-grid-2">
-      <div class="chart-card card">
-        <div class="chart-top">
-          <div>
-            <h4 class="chart-name">Inflation Rate</h4>
-            <div class="chart-src">% annual CPI · World Bank</div>
-          </div>
-          <span class="badge">CPI</span>
-        </div>
+    <div class="chart-2">
+      <div class="chart-box card">
+        <div class="chart-top"><div><div class="chart-name">Inflation Rate</div><div class="chart-src">% annual CPI · World Bank</div></div><span class="badge">CPI</span></div>
         <div class="canvas-wrap"><canvas id="chartInf"></canvas></div>
         <div class="insight" id="insightInf"></div>
       </div>
-
-      <div class="chart-card card">
-        <div class="chart-top">
-          <div>
-            <h4 class="chart-name">GDP Growth Rate</h4>
-            <div class="chart-src">% annual · World Bank</div>
-          </div>
-          <span class="badge">GDP</span>
-        </div>
+      <div class="chart-box card">
+        <div class="chart-top"><div><div class="chart-name">GDP Growth Rate</div><div class="chart-src">% annual · World Bank</div></div><span class="badge">GDP</span></div>
         <div class="canvas-wrap"><canvas id="chartGdp"></canvas></div>
         <div class="insight" id="insightGdp"></div>
       </div>
     </div>
-
-    <div class="chart-grid-2" style="margin-top:1rem">
-      <div class="chart-card card">
-        <div class="chart-top">
-          <div>
-            <h4 class="chart-name">Unemployment Rate</h4>
-            <div class="chart-src">% of labour force · World Bank / ILO</div>
-          </div>
-          <span class="badge">ILO</span>
-        </div>
+    <div class="chart-2">
+      <div class="chart-box card">
+        <div class="chart-top"><div><div class="chart-name">Unemployment Rate</div><div class="chart-src">% of labour force · ILO / World Bank</div></div><span class="badge">ILO</span></div>
         <div class="canvas-wrap"><canvas id="chartUnem"></canvas></div>
         <div class="insight" id="insightUnem"></div>
       </div>
-
-      <div class="chart-card card">
-        <div class="chart-top">
-          <div>
-            <h4 class="chart-name">Macro Signal</h4>
-            <div class="chart-src">quick read · auto generated from the latest values</div>
-          </div>
-          <span class="badge">Pulse</span>
-        </div>
-        <div class="canvas-wrap" style="display:grid;place-items:center;text-align:center">
-          <div>
-            <div style="font-family:var(--heading);font-size:clamp(2rem,5vw,3.4rem);letter-spacing:-.05em" id="macroPulse">—</div>
-            <div class="meta" style="max-width:30ch;margin:0 auto" id="macroPulseText">Refreshing…</div>
-          </div>
+      <div class="chart-box card" style="display:grid;align-items:center">
+        <div class="chart-top"><div><div class="chart-name">Macro Pulse</div><div class="chart-src">composite signal · auto-generated</div></div><span class="badge">Pulse</span></div>
+        <div class="pulse-box">
+          <div class="pulse-num col-lime" id="macroPulse">—</div>
+          <div class="pulse-label" id="macroPulseText">Waiting for live macro data to compute the signal.</div>
         </div>
       </div>
     </div>
   </section>
 
+  <!-- FX SECTION -->
   <section class="section card reveal" id="fx">
-    <div class="section-head">
-      <div>
-        <h3 class="section-title">Live USD / NGN</h3>
-      </div>
-      <p class="section-desc">
-        This feed uses a free browser-friendly FX API for daily reference rates. The chart updates automatically,
-        and the range buttons let you jump between 30 days, 90 days, and one year.
-      </p>
+    <div class="sec-head">
+      <div><div class="sec-title">Live USD / NGN</div></div>
+      <p class="sec-desc">Frankfurter daily reference rates. Range buttons switch between 30 days, 90 days, and 1 year.</p>
     </div>
-
-    <div class="fx-hero">
-      <div class="card rate-box">
-        <div class="label">Current reference rate</div>
-        <div class="rate-big" id="fxBig">—</div>
-        <div class="meta" id="fxMeta">Fetching daily reference data…</div>
-        <div class="rate-mini">
-          <span class="mini-pill" id="fxChange">—</span>
-          <span class="mini-pill">Higher = weaker naira</span>
-          <span class="mini-pill">Auto refresh ON</span>
+    <div class="fx-grid">
+      <div class="rate-box card">
+        <div class="kpi-label">Current reference rate</div>
+        <div class="rate-big col-gold" id="fxBig">—</div>
+        <div class="ctrl-meta" id="fxMeta">Fetching…</div>
+        <div class="rate-pills">
+          <span class="rate-pill" id="fxChange">—</span>
+          <span class="rate-pill">Higher = weaker naira</span>
+          <span class="rate-pill">Auto-refresh ON</span>
         </div>
       </div>
-
-      <div class="card rate-box">
-        <div class="label">FX controls</div>
-        <div class="group" id="fxRanges">
-          <button class="range-btn active" data-fxrange="30" type="button">30D</button>
-          <button class="range-btn" data-fxrange="90" type="button">90D</button>
-          <button class="range-btn" data-fxrange="365" type="button">1Y</button>
+      <div class="rate-box card">
+        <div class="kpi-label">FX data sources</div>
+        <div class="btn-group">
+          <span class="range-btn active">Live spot</span>
+          <span class="range-btn active">Annual history</span>
         </div>
-        <div class="meta" id="fxRangeMeta">Showing 30 days of USD/NGN reference data.</div>
+        <div class="ctrl-meta" id="fxRangeMeta">Live rate: open.er-api.com · History: World Bank annual series.</div>
       </div>
     </div>
-
-    <div class="chart-card card" style="margin-top:1rem">
-      <div class="chart-top">
-        <div>
-          <h4 class="chart-name">USD / NGN Trend</h4>
-          <div class="chart-src">daily reference rates · Frankfurter</div>
-        </div>
-        <span class="badge">FX</span>
-      </div>
+    <div class="chart-box card">
+      <div class="chart-top"><div><div class="chart-name">USD / NGN Trend</div><div class="chart-src">daily reference rates · Frankfurter</div></div><span class="badge">FX</span></div>
       <div class="canvas-wrap"><canvas id="chartFx"></canvas></div>
       <div class="insight" id="insightFx"></div>
     </div>
   </section>
 
+  <!-- NBS JOBS -->
   <section class="section card reveal" id="employment">
-    <div class="section-head">
-      <div>
-        <h3 class="section-title">NBS Job Creation & Separation 2024</h3>
-      </div>
-      <p class="section-desc">
-        Your research section, cleaned up with better spacing, clearer emphasis, and quarter switching that feels more interactive.
-      </p>
+    <div class="sec-head">
+      <div><div class="sec-title">NBS Job Creation & Separation 2024</div></div>
+      <p class="sec-desc">Primary research from the NBS Business Establishment Survey. B.Sc. Statistics FYP, University of Abuja.</p>
     </div>
-
+    <div class="fyp-header">
+      <div class="fyp-badge">Primary Research</div>
+      <div class="fyp-text">
+        <strong>National Bureau of Statistics (NBS) Business Establishment Survey 2024.</strong>
+        Analysed as part of a B.Sc. Statistics final year project at the University of Abuja (supervised by Dr. Rauf, graduating May 2026).
+        Dataset covers 8 occupational categories across Q1–Q3 2024. Methods: descriptive statistics, Chi-Square Test of Homogeneity, quarterly trend analysis.
+      </div>
+    </div>
     <div class="q-tabs" id="qTabs">
-      <div class="tab active" data-q="1" onclick="setQuarter(1,this)">
-        <div class="big">4,323</div>
-        <div class="small">Q1 2024</div>
-        <div class="desc">Jobs created</div>
+      <div class="q-tab active" onclick="setQuarter(1,this)">
+        <div class="q-num">4,323</div><div class="q-lbl">Q1 2024</div><div class="q-sub">Jobs created</div>
       </div>
-      <div class="tab" data-q="2" onclick="setQuarter(2,this)">
-        <div class="big">2,050</div>
-        <div class="small">Q2 2024</div>
-        <div class="desc">Jobs created</div>
+      <div class="q-tab" onclick="setQuarter(2,this)">
+        <div class="q-num">2,050</div><div class="q-lbl">Q2 2024</div><div class="q-sub">Jobs created</div>
       </div>
-      <div class="tab" data-q="3" onclick="setQuarter(3,this)">
-        <div class="big">1,848</div>
-        <div class="small">Q3 2024</div>
-        <div class="desc">Jobs created</div>
+      <div class="q-tab" onclick="setQuarter(3,this)">
+        <div class="q-num">1,848</div><div class="q-lbl">Q3 2024</div><div class="q-sub">Jobs created</div>
       </div>
-      <div class="tab" style="cursor:default">
-        <div class="big" style="color:var(--danger)">2,184</div>
-        <div class="small">Jan–Sep 2024</div>
-        <div class="desc">Total separated</div>
+      <div class="q-tab" data-nodrop style="border-bottom-color:var(--danger)!important;cursor:default">
+        <div class="q-num" style="color:var(--danger)">2,184</div><div class="q-lbl">Jan–Sep 2024</div><div class="q-sub">Total separated</div>
       </div>
     </div>
-
-    <div class="chart-grid-3">
-      <div class="chart-card card">
-        <div class="chart-top">
-          <div>
-            <h4 class="chart-name" id="jcsTitle">Jobs Created vs Separated · Q1 2024</h4>
-            <div class="chart-src">by occupational category · NBS 2024</div>
-          </div>
-          <span class="badge">Survey</span>
-        </div>
+    <div class="chart-3">
+      <div class="chart-box card">
+        <div class="chart-top"><div><div class="chart-name" id="jcsTitle">Jobs Created vs Separated · Q1 2024</div><div class="chart-src">by occupational category · NBS 2024</div></div><span class="badge">Survey</span></div>
         <div class="canvas-wrap tall"><canvas id="chartJcs"></canvas></div>
         <div class="insight" id="insightJcs"></div>
       </div>
-
-      <div class="chart-card card">
-        <div class="chart-top">
-          <div>
-            <h4 class="chart-name">Quarterly Trend</h4>
-            <div class="chart-src">total job creation across Q1–Q3</div>
-          </div>
-          <span class="badge">Trend</span>
-        </div>
+      <div class="chart-box card">
+        <div class="chart-top"><div><div class="chart-name">Quarterly Trend</div><div class="chart-src">total job creation Q1–Q3</div></div><span class="badge">Trend</span></div>
         <div class="canvas-wrap tall"><canvas id="chartTrend"></canvas></div>
         <div class="insight" id="insightTrend"></div>
       </div>
     </div>
-
-    <div class="chart-card card" style="margin-top:1rem">
-      <div class="chart-top">
-        <div>
-          <h4 class="chart-name">Reasons for Job Separation</h4>
-          <div class="chart-src">NBS survey 2024 · n = 2,185</div>
-        </div>
-        <span class="badge">Table</span>
-      </div>
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Reason</th>
-            <th>Count</th>
-            <th>Share</th>
-            <th style="width:220px">Distribution</th>
-          </tr>
-        </thead>
-        <tbody id="reasonsBody"></tbody>
-      </table>
+    <div class="chart-box card">
+      <div class="chart-top"><div><div class="chart-name">Reasons for Job Separation</div><div class="chart-src">NBS survey 2024 · n = 2,185</div></div><span class="badge">Table</span></div>
+      <table class="data-tbl"><thead><tr><th>Reason</th><th>Count</th><th>Share</th><th style="width:200px">Distribution</th></tr></thead><tbody id="reasonsBody"></tbody></table>
     </div>
   </section>
 
+  <!-- METHODOLOGY -->
   <section class="section card reveal" id="methodology">
-    <div class="section-head">
-      <div>
-        <h3 class="section-title">Methodology & Sources</h3>
+    <div class="sec-head"><div><div class="sec-title">Methodology & Sources</div></div></div>
+    <div class="method-grid">
+      <div class="method-card card">
+        <div class="method-icon">📊</div>
+        <div class="method-name">Descriptive Statistics</div>
+        <div class="method-body">Job Creation Rate, Separation Rate and Net Employment Change by occupational category across Q1–Q3 2024. Computed from raw NBS Business Establishment Survey data.</div>
       </div>
-    </div>
-
-    <div class="methods">
-      <div class="method card">
-        <div class="micon">📊</div>
-        <h3>Descriptive Statistics</h3>
-        <p>Jobs created, separated, and net change are broken down by occupational category and quarter for a cleaner public view of the survey.</p>
+      <div class="method-card card">
+        <div class="method-icon">χ²</div>
+        <div class="method-name">Chi-Square Homogeneity Test</div>
+        <div class="method-body">Tests whether the distribution of job creation and separation across occupational categories is statistically homogeneous. Full analysis performed in base R with contingency table output.</div>
       </div>
-      <div class="method card">
-        <div class="micon">χ²</div>
-        <h3>Chi-Square Test</h3>
-        <p>The research section keeps the same analytical backbone, with the categoric distribution ready for formal statistical interpretation.</p>
-      </div>
-      <div class="method card">
-        <div class="micon">🌐</div>
-        <h3>Live Public APIs</h3>
-        <p>Macro indicators come from the World Bank API, while daily FX is handled by Frankfurter, all updated automatically from the browser.</p>
+      <div class="method-card card">
+        <div class="method-icon">🌐</div>
+        <div class="method-name">Live Public APIs</div>
+        <div class="method-body">Macro data from the World Bank Open Data API. Daily FX rates from Frankfurter (free, no key required). Both refresh automatically every 15 minutes while the tab is visible.</div>
       </div>
     </div>
   </section>
 
+  <!-- FOOTER -->
   <footer class="footer card reveal">
     <div class="footer-grid">
       <div>
         <h4>NaijaMetrics</h4>
-        <p style="margin:0;line-height:1.8">
-          A cleaner, faster Nigerian economic dashboard for macro context, research, and public data browsing.
-        </p>
+        <p>Open-source Nigerian economic intelligence dashboard. Making public data accessible — built by a statistician who got tired of digging through government PDFs.</p>
+        <p style="margin-top:.6rem;font-size:.65rem">Built by <a href="https://amananalytics.is-a.dev" style="color:var(--lime)">Abdulrahman Sanni</a> · B.Sc. Statistics, University of Abuja 2026</p>
       </div>
       <div>
         <h4>Data Sources</h4>
-        <a href="https://data.worldbank.org/country/nigeria" target="_blank" rel="noopener">World Bank Open Data</a>
-        <a href="https://nigerianstat.gov.ng" target="_blank" rel="noopener">National Bureau of Statistics</a>
-        <a href="https://www.cbn.gov.ng/rates/ExchRateByCurrency.html" target="_blank" rel="noopener">CBN Exchange Rates</a>
+        <div class="footer-links">
+          <a href="https://data.worldbank.org/country/nigeria" target="_blank" rel="noopener">World Bank Open Data</a>
+          <a href="https://api.frankfurter.dev" target="_blank" rel="noopener">Frankfurter FX API</a>
+          <a href="https://nigerianstat.gov.ng" target="_blank" rel="noopener">National Bureau of Statistics</a>
+          <a href="https://www.cbn.gov.ng" target="_blank" rel="noopener">Central Bank of Nigeria</a>
+        </div>
       </div>
       <div>
         <h4>Connect</h4>
-        <a href="https://github.com/amananalytics" target="_blank" rel="noopener">GitHub: amananalytics</a>
-        <a href="https://amananalytics.is-a.dev" target="_blank" rel="noopener">Portfolio</a>
-        <a href="https://twitter.com/0xAman_" target="_blank" rel="noopener">Twitter: @0xAman_</a>
+        <div class="footer-links">
+          <a href="https://github.com/amananalytics" target="_blank" rel="noopener">GitHub: amananalytics</a>
+          <a href="https://amananalytics.is-a.dev" target="_blank" rel="noopener">Portfolio</a>
+          <a href="https://twitter.com/0xAman_" target="_blank" rel="noopener">Twitter: @0xAman_</a>
+          <a href="https://warpcast.com/amaan056" target="_blank" rel="noopener">Farcaster: @amaan056</a>
+        </div>
       </div>
     </div>
     <div class="footer-bottom">
-      <span>© 2026 Abdulrahman Sanni · MIT License</span>
-      <span>Built for GitHub Pages · Abuja, Nigeria</span>
+      <span>© 2026 Abdulrahman Sanni · MIT License · Open Source</span>
+      <span style="color:var(--lime)">● Live · Abuja, Nigeria</span>
     </div>
   </footer>
 </div>
 
 <script>
-/* =========================
+/* ═══════════════════════════════════════
+   PARTICLE TRAIL CURSOR
+═══════════════════════════════════════ */
+const pCanvas = document.getElementById('particleCanvas');
+const pCtx    = pCanvas.getContext('2d');
+let pW = pCanvas.width  = window.innerWidth;
+let pH = pCanvas.height = window.innerHeight;
+window.addEventListener('resize', () => {
+  pW = pCanvas.width  = window.innerWidth;
+  pH = pCanvas.height = window.innerHeight;
+});
+
+const particles = [];
+let mx = -999, my = -999, lastMx = -999, lastMy = -999;
+
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+function spawnParticle(x, y){
+  const angle  = Math.random() * Math.PI * 2;
+  const speed  = Math.random() * 1.2 + 0.3;
+  const size   = Math.random() * 4 + 1.5;
+  const colors = ['#00D46A','#00FF7F','#008751','#A8FFD0','#F5C518'];
+  particles.push({
+    x, y,
+    vx: Math.cos(angle) * speed * 0.6,
+    vy: Math.sin(angle) * speed * 0.6 - 0.4,
+    life: 1,
+    decay: Math.random() * 0.025 + 0.018,
+    size,
+    color: colors[Math.floor(Math.random() * colors.length)],
+  });
+}
+
+function animateParticles(){
+  pCtx.clearRect(0, 0, pW, pH);
+
+  // spawn on movement
+  const moved = Math.hypot(mx - lastMx, my - lastMy);
+  if (moved > 2) {
+    const count = Math.min(Math.floor(moved * 0.4), 5);
+    for (let i = 0; i < count; i++) {
+      spawnParticle(
+        lastMx + (mx - lastMx) * (i / count),
+        lastMy + (my - lastMy) * (i / count)
+      );
+    }
+    lastMx = mx; lastMy = my;
+  }
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x  += p.vx;
+    p.y  += p.vy;
+    p.vy += 0.03; // gravity
+    p.life -= p.decay;
+    if (p.life <= 0) { particles.splice(i, 1); continue; }
+    pCtx.globalAlpha = p.life * p.life;
+    pCtx.beginPath();
+    pCtx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+    pCtx.fillStyle = p.color;
+    pCtx.fill();
+  }
+  pCtx.globalAlpha = 1;
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+/* ═══════════════════════════════════════
    STATE
-========================= */
-const state = {
-  theme: localStorage.getItem('nm-theme') || (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'),
+═══════════════════════════════════════ */
+const S = {
+  theme: localStorage.getItem('nm-theme') || (matchMedia('(prefers-color-scheme:light)').matches ? 'light' : 'dark'),
   macroRange: 5,
   fxRange: 30,
   quarter: 1,
-  data: {
-    inf: [],
-    gdp: [],
-    unem: [],
-    fx: []
-  },
+  data: { inf:[], gdp:[], unem:[], fx:[] },
   charts: {}
 };
 
-/* =========================
-   THEME / UI
-========================= */
-function setTheme(theme){
-  state.theme = theme;
-  document.documentElement.dataset.theme = theme;
-  localStorage.setItem('nm-theme', theme);
-  document.getElementById('themeBtn').textContent = theme === 'light' ? '☀ Light' : '☾ Dark';
-  document.getElementById('modeText').textContent = theme === 'light' ? 'Light' : 'Dark';
+/* ═══════════════════════════════════════
+   THEME
+═══════════════════════════════════════ */
+function setTheme(t){
+  S.theme = t;
+  document.documentElement.dataset.theme = t;
+  localStorage.setItem('nm-theme', t);
+  document.getElementById('themeBtn').textContent = t === 'light' ? '☀ Light' : '☾ Dark';
+  document.getElementById('modeText').textContent = t === 'light' ? 'Light' : 'Dark';
 }
 
+/* ═══════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════ */
 function fmtDate(d){
-  const pad = n => String(n).padStart(2,'0');
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  const p = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+}
+function n1(v){ return (typeof v === 'number' && isFinite(v)) ? v.toFixed(1) : '—'; }
+function latest(arr){ return arr?.length ? arr[arr.length-1] : null; }
+function chgVal(arr){ const a=latest(arr),b=arr?.[arr.length-2]; return(a&&b)?a.value-b.value:null; }
+function pctChg(arr){ const a=latest(arr),b=arr?.[arr.length-2]; return(a&&b&&b.value!==0)?((a.value-b.value)/b.value)*100:null; }
+function slice(arr,r){ if(!Array.isArray(arr))return[]; return r==='all'?arr.slice():arr.slice(-Number(r)); }
+function setStatus(t){ document.getElementById('statusLine').textContent=t; document.getElementById('liveLabel').textContent=t.includes('Refresh')?'Refreshing…':'Live sync'; }
+function setRefreshTime(){ document.getElementById('lastRefresh').textContent = new Date().toLocaleTimeString(); }
+function setGroup(pid,btn){ document.querySelectorAll(`#${pid} .range-btn`).forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
+
+function deltaSpan(v, suffix='%', positiveGood=true){
+  if(v===null||!isFinite(v)) return '';
+  const good = positiveGood ? v>0 : v<0;
+  const cls  = good ? 'down' : 'up';
+  const icon = v>0 ? '▲' : '▼';
+  return `<span class="delta ${cls}">${icon} ${Math.abs(v).toFixed(1)}${suffix}</span>`;
 }
 
-function fmtNum(n, d = 1){
-  if (n === null || n === undefined || Number.isNaN(Number(n))) return '—';
-  return Number(n).toFixed(d);
+function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+/* ═══════════════════════════════════════
+   CHART FACTORY
+═══════════════════════════════════════ */
+function destroyChart(k){ if(S.charts[k]){S.charts[k].destroy();S.charts[k]=null;} }
+
+function lineChart(key, id, labels, values, color, fmt){
+  const el = document.getElementById(id);
+  if(!el) return;
+  destroyChart(key);
+  S.charts[key] = new Chart(el, {
+    type:'line',
+    data:{ labels, datasets:[{
+      data:values, borderColor:color, backgroundColor:color+'18',
+      borderWidth:2, pointRadius:2.5, pointHoverRadius:5.5,
+      pointBackgroundColor:color, fill:true, tension:0.38
+    }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{ backgroundColor:cssVar('--panel'), borderColor:cssVar('--border2'), borderWidth:1,
+          titleColor:cssVar('--text'), bodyColor:cssVar('--muted'), padding:10,
+          callbacks:{ label: ctx => fmt ? fmt(ctx.raw) : Number(ctx.raw).toFixed(1) }
+        }
+      },
+      scales:{
+        x:{ grid:{ color:cssVar('--border') }, ticks:{ maxTicksLimit:8, maxRotation:0 } },
+        y:{ grid:{ color:cssVar('--border') }, ticks:{ callback: v => fmt ? fmt(v) : Number(v).toFixed(1) } }
+      }
+    }
+  });
 }
 
-function latest(arr){
-  return arr?.length ? arr[arr.length - 1] : null;
-}
-
-function prev(arr){
-  return arr?.length > 1 ? arr[arr.length - 2] : null;
-}
-
-function change(arr){
-  const a = latest(arr), b = prev(arr);
-  return (a && b) ? a.value - b.value : null;
-}
-
-function percentChange(arr){
-  const a = latest(arr), b = prev(arr);
-  return (a && b && b.value !== 0) ? ((a.value - b.value) / b.value) * 100 : null;
-}
-
-function sliceByRange(arr, range){
-  if (!Array.isArray(arr)) return [];
-  if (range === 'all') return arr.slice();
-  return arr.slice(-Number(range));
-}
-
-function setStatus(text){
-  document.getElementById('statusLine').textContent = text;
-  document.getElementById('liveLabel').textContent = text.includes('Refreshing') ? 'Refreshing…' : 'Live sync';
-}
-
-function setLastRefresh(){
-  document.getElementById('lastRefresh').textContent = new Date().toLocaleString();
-}
-
-function setActiveGroup(containerId, activeBtn){
-  document.querySelectorAll(`#${containerId} .range-btn`).forEach(btn => btn.classList.remove('active'));
-  activeBtn.classList.add('active');
-}
-
-/* =========================
-   CURSOR
-========================= */
-const cur = document.getElementById('cursor');
-const ring = document.getElementById('cursor-ring');
-let mx = 0, my = 0, rx = 0, ry = 0;
-
-document.addEventListener('mousemove', e => {
-  mx = e.clientX;
-  my = e.clientY;
-  if (cur) {
-    cur.style.left = mx + 'px';
-    cur.style.top = my + 'px';
-  }
-});
-
-(function cursorLoop(){
-  rx += (mx - rx) * 0.12;
-  ry += (my - ry) * 0.12;
-  if (ring) {
-    ring.style.left = rx + 'px';
-    ring.style.top = ry + 'px';
-  }
-  requestAnimationFrame(cursorLoop);
+/* ═══════════════════════════════════════
+   TICKER
+═══════════════════════════════════════ */
+(function buildTicker(){
+  const items = ['INFLATION RATE','GDP GROWTH','NBS JOB SURVEY 2024','USD/NGN LIVE FX',
+    'UNEMPLOYMENT','JOB CREATION 8,221','SEPARATION 2,184','CHI-SQUARE TEST',
+    'WORLD BANK API','FRANKFURTER FX','QUARTERLY TREND','OPEN SOURCE · MIT','ABUJA NIGERIA'];
+  const inner = document.getElementById('tickerInner');
+  inner.innerHTML = [...items,...items,...items].map(s=>`<span>${s}</span>`).join('');
 })();
 
-document.querySelectorAll('a,button,.tab,.theme-toggle,.refresh-btn,.range-btn,.card').forEach(el => {
-  el.addEventListener('mouseenter', () => {
-    if (!ring) return;
-    ring.style.width = '52px';
-    ring.style.height = '52px';
-    ring.style.borderColor = 'rgba(0,212,106,0.72)';
-  });
-  el.addEventListener('mouseleave', () => {
-    if (!ring) return;
-    ring.style.width = '34px';
-    ring.style.height = '34px';
-    ring.style.borderColor = 'rgba(0,212,106,0.35)';
-  });
-});
+/* ═══════════════════════════════════════
+   SCROLL REVEAL
+═══════════════════════════════════════ */
+const revealObs = new IntersectionObserver(es=>{
+  es.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('show'); });
+}, { threshold:0.07 });
+document.querySelectorAll('.reveal').forEach(el=>revealObs.observe(el));
 
-/* =========================
-   REVEAL
-========================= */
-const obs = new IntersectionObserver(entries => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) entry.target.classList.add('show');
-  });
-}, { threshold: 0.08 });
+/* ═══════════════════════════════════════
+   ANIMATED COUNTER
+═══════════════════════════════════════ */
+function animCount(el, target, suffix='', dec=1, dur=1300){
+  const t0 = performance.now();
+  (function step(now){
+    const p    = Math.min((now-t0)/dur, 1);
+    const ease = 1 - Math.pow(1-p, 3);
+    const val  = ease * target;
+    el.textContent = (dec===0 ? Math.round(val) : val.toFixed(dec)) + suffix;
+    if(p<1) requestAnimationFrame(step);
+  })(performance.now());
+}
 
-document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
-
-/* =========================
-   DATA SOURCES
-========================= */
+/* ═══════════════════════════════════════
+   DATA FETCHING
+═══════════════════════════════════════ */
 async function fetchWB(indicator){
   try{
-    const url = `https://api.worldbank.org/v2/country/NG/indicator/${indicator}?format=json&mrv=60&per_page=60`;
-    const res = await fetch(url);
-    const json = await res.json();
-    const rows = (Array.isArray(json) && json[1]) ? json[1] : [];
-    return rows
-      .filter(row => row && row.value !== null && row.value !== undefined)
-      .map(row => ({ date: String(row.date), value: Number(row.value) }))
-      .filter(row => Number.isFinite(row.value))
-      .sort((a,b) => Number(a.date) - Number(b.date));
-  }catch(err){
-    return [];
-  }
+    const r = await fetch(`https://api.worldbank.org/v2/country/NG/indicator/${indicator}?format=json&mrv=60&per_page=60`);
+    const d = await r.json();
+    return ((d[1]||[])
+      .filter(row=>row&&row.value!==null)
+      .map(row=>({date:String(row.date),value:Number(row.value)}))
+      .filter(row=>isFinite(row.value))
+      .sort((a,b)=>Number(a.date)-Number(b.date)));
+  }catch{ return []; }
 }
 
-async function fetchFx(days = 365){
+// Frankfurter does NOT support NGN (ECB currencies only).
+// We use: open.er-api.com for the live rate + World Bank PA.NUS.FCRF for annual history.
+async function fetchFxCurrent(){
   try{
-    const end = new Date();
-    const start = new Date(end);
-    start.setDate(end.getDate() - days);
+    const r = await fetch('https://open.er-api.com/v6/latest/USD');
+    const d = await r.json();
+    if(d && d.rates && d.rates.NGN) return { rate: d.rates.NGN, date: d.time_last_update_utc };
+    return null;
+  }catch{ return null; }
+}
 
-    const url = `https://api.frankfurter.dev/v2/rates?from=${fmtDate(start)}&to=${fmtDate(end)}&base=USD&quotes=NGN`;
-    const res = await fetch(url);
-    const json = await res.json();
+async function fetchFx(){
+  // historical annual data from World Bank
+  try{
+    const r = await fetch('https://api.worldbank.org/v2/country/NG/indicator/PA.NUS.FCRF?format=json&mrv=30&per_page=30');
+    const d = await r.json();
+    return ((d[1]||[])
+      .filter(row=>row&&row.value!==null)
+      .map(row=>({date:String(row.date), value:Number(row.value)}))
+      .filter(row=>isFinite(row.value))
+      .sort((a,b)=>Number(a.date)-Number(b.date)));
+  }catch{ return []; }
+}
 
-    return (Array.isArray(json) ? json : [])
-      .map(row => ({
-        date: row.date,
-        value: Number(row.rate)
-      }))
-      .filter(row => Number.isFinite(row.value))
-      .sort((a,b) => a.date.localeCompare(b.date));
-  }catch(err){
-    return [];
+/* ═══════════════════════════════════════
+   RENDER MACRO
+═══════════════════════════════════════ */
+function renderMacro(){
+  const inf  = slice(S.data.inf,  S.macroRange);
+  const gdp  = slice(S.data.gdp,  S.macroRange);
+  const unem = slice(S.data.unem, S.macroRange);
+
+  document.getElementById('macroMeta').textContent =
+    S.macroRange==='all'
+      ? 'Showing all available annual data points.'
+      : `Showing last ${S.macroRange} annual points per indicator`;
+
+  if(inf.length){
+    const cur=latest(inf), chg=chgVal(inf);
+    animCount(document.getElementById('kpiInf'), cur.value, '%', 1);
+    document.getElementById('subInf').innerHTML = `${cur.date} ${deltaSpan(chg,'%',false)}`;
+    document.getElementById('insightInf').innerHTML =
+      `<strong>Inflation context:</strong> latest annual CPI is ${n1(cur.value)}%, a ${Math.abs(cur.value-inf[0].value).toFixed(1)} point movement from the start of the selected range.`;
+    lineChart('inf','chartInf',inf.map(d=>d.date),inf.map(d=>d.value),'#FF5468',v=>`${Number(v).toFixed(1)}%`);
+  }
+
+  if(gdp.length){
+    const cur=latest(gdp), chg=chgVal(gdp);
+    animCount(document.getElementById('kpiGdp'), cur.value, '%', 1);
+    document.getElementById('subGdp').innerHTML = `${cur.date} ${deltaSpan(chg,'%',true)}`;
+    document.getElementById('insightGdp').innerHTML =
+      `<strong>Growth context:</strong> GDP growth is ${n1(cur.value)}%, with a ${Math.abs(cur.value-gdp[0].value).toFixed(1)} point shift across the selected window.`;
+    lineChart('gdp','chartGdp',gdp.map(d=>d.date),gdp.map(d=>d.value),'#00D46A',v=>`${Number(v).toFixed(1)}%`);
+  }
+
+  if(unem.length){
+    const cur=latest(unem), chg=chgVal(unem);
+    animCount(document.getElementById('kpiUnem'), cur.value, '%', 1);
+    document.getElementById('subUnem').innerHTML = `${cur.date} ${deltaSpan(chg,'%',false)}`;
+    document.getElementById('insightUnem').innerHTML =
+      `<strong>Labour context:</strong> unemployment is ${n1(cur.value)}% of the labour force, ${Math.abs(cur.value-unem[0].value).toFixed(1)} points from the start of the range.`;
+    lineChart('unem','chartUnem',unem.map(d=>d.date),unem.map(d=>d.value),'#38BDF8',v=>`${Number(v).toFixed(1)}%`);
+  }
+
+  if(inf.length&&gdp.length&&unem.length){
+    const pulse = ((gdp.at(-1).value - unem.at(-1).value) + (10 - inf.at(-1).value)).toFixed(1);
+    document.getElementById('macroPulse').textContent = pulse;
+    document.getElementById('macroPulseText').textContent =
+      'Composite score: higher = stronger macro environment. Generated from the latest GDP, unemployment, and inflation readings.';
   }
 }
 
-/* =========================
-   CHARTS
-========================= */
-function destroyChart(key){
-  if (state.charts[key]) {
-    state.charts[key].destroy();
-    state.charts[key] = null;
+/* ═══════════════════════════════════════
+   RENDER FX
+═══════════════════════════════════════ */
+async function renderFx(){
+  // Live current rate
+  const live = await fetchFxCurrent();
+  const fx   = S.data.fx; // annual WB history
+
+  if(live){
+    animCount(document.getElementById('kpiFx'), live.rate, '', 0);
+    document.getElementById('fxBig').textContent = `₦${Math.round(live.rate).toLocaleString()}`;
+    document.getElementById('fxMeta').textContent = `Live rate · ${live.date.slice(0,16)} UTC`;
+    document.getElementById('fxChange').textContent = 'Live · open.er-api.com';
+    document.getElementById('subFx').innerHTML = `Live · open.er-api.com`;
+  }
+
+  if(fx.length){
+    const cur=latest(fx), prev=fx[fx.length-2];
+    const chg = prev ? cur.value - prev.value : null;
+    document.getElementById('fxRangeMeta').textContent = `Showing ${fx.length} annual reference points (World Bank). Live spot rate above from open.er-api.`;
+    document.getElementById('insightFx').innerHTML =
+      `<strong>FX view:</strong> annual official rate reached ₦${Math.round(cur.value).toLocaleString()} in ${cur.date}${chg!==null?`, up ₦${Math.abs(chg).toFixed(0)} from the prior year`:''}.`;
+    lineChart('fx','chartFx',fx.map(d=>d.date),fx.map(d=>d.value),'#F5C518',v=>`₦${Math.round(v).toLocaleString()}`);
   }
 }
 
-function makeLineChart(key, canvasId, labels, values, color, yFormatter){
-  const canvas = document.getElementById(canvasId);
-  if (!canvas) return;
-
-  destroyChart(key);
-
-  state.charts[key] = new Chart(canvas, {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: key,
-        data: values,
-        borderColor: color,
-        backgroundColor: color + '1A',
-        borderWidth: 2,
-        pointRadius: 2.5,
-        pointHoverRadius: 5,
-        pointBackgroundColor: color,
-        fill: true,
-        tension: 0.38
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--panel'),
-          borderColor: getComputedStyle(document.documentElement).getPropertyValue('--border2'),
-          borderWidth: 1,
-          titleColor: getComputedStyle(document.documentElement).getPropertyValue('--text'),
-          bodyColor: getComputedStyle(document.documentElement).getPropertyValue('--muted'),
-          padding: 10,
-          callbacks: {
-            label: ctx => {
-              const v = ctx.raw;
-              return `${ctx.dataset.label}: ${yFormatter ? yFormatter(v) : Number(v).toFixed(1)}`;
-            }
-          }
-        }
-      },
-      scales: {
-        x: {
-          grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border') },
-          ticks: { maxTicksLimit: 8, maxRotation: 0 }
-        },
-        y: {
-          grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border') },
-          ticks: { callback: v => yFormatter ? yFormatter(v) : Number(v).toFixed(1) }
-        }
-      }
-    }
-  });
-}
-
-function renderReasons(){
-  const reasons = [
-    { r:'Voluntary resignation', f:612 },
-    { r:'Business closure/downsizing', f:498 },
-    { r:'Contract/seasonal end', f:387 },
-    { r:'Retirement', f:265 },
-    { r:'Dismissal/termination', f:218 },
-    { r:'Business relocation', f:135 },
-    { r:'Other/unspecified', f:70 }
-  ];
-  const total = reasons.reduce((a,b) => a + b.f, 0);
-  const max = Math.max(...reasons.map(r => r.f));
-  document.getElementById('reasonsBody').innerHTML = reasons.map(r => {
-    const pct = (r.f / total * 100).toFixed(1);
-    const w = Math.round(r.f / max * 170);
-    return `
-      <tr>
-        <td>${r.r}</td>
-        <td>${r.f.toLocaleString()}</td>
-        <td>${pct}%</td>
-        <td><div class="bar"><span style="width:${w}px"></span></div></td>
-      </tr>
-    `;
-  }).join('');
-}
+/* ═══════════════════════════════════════
+   RENDER FYP
+═══════════════════════════════════════ */
+const CATS  = ['W.Proprietors','Mgr/Prof/Tech','Clerical','Consultants','Apprentices','Operatives','Unpaid','Other'];
+const JC    = { 1:[820,750,420,180,610,980,380,183], 2:[390,356,200,85,290,465,181,83], 3:[350,320,180,77,261,419,163,78] };
+const JS    = [380,320,280,95,310,480,220,99];
+const REASONS = [
+  {r:'Voluntary resignation',f:612},{r:'Business closure/downsizing',f:498},
+  {r:'Contract/seasonal end',f:387},{r:'Retirement',f:265},
+  {r:'Dismissal/termination',f:218},{r:'Business relocation',f:135},{r:'Other/unspecified',f:70},
+];
 
 function renderQuarter(q){
-  const cats = ['W.Proprietors','Mgr/Prof/Tech','Clerical','Consultants','Apprentices','Operatives','Unpaid','Other'];
-  const created = {
-    1: [820,750,420,180,610,980,380,183],
-    2: [390,356,200,85,290,465,181,83],
-    3: [350,320,180,77,261,419,163,78]
-  };
-  const separated = [380,320,280,95,310,480,220,99];
-
   destroyChart('jcs');
-  state.charts.jcs = new Chart(document.getElementById('chartJcs'), {
-    type: 'bar',
-    data: {
-      labels: cats,
-      datasets: [
-        {
-          label: `Created (Q${q})`,
-          data: created[q],
-          backgroundColor: 'rgba(0,212,106,0.18)',
-          borderColor: '#00D46A',
-          borderWidth: 1.3,
-          borderRadius: 4
-        },
-        {
-          label: 'Separated',
-          data: separated,
-          backgroundColor: 'rgba(255,84,104,0.15)',
-          borderColor: '#FF5468',
-          borderWidth: 1.3,
-          borderRadius: 4
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: { labels: { boxWidth: 10, color: getComputedStyle(document.documentElement).getPropertyValue('--muted') } }
-      },
-      scales: {
-        x: { grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border') }, ticks: { font: { size: 10 } } },
-        y: { grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border') } }
-      }
+  S.charts.jcs = new Chart(document.getElementById('chartJcs'),{
+    type:'bar',
+    data:{ labels:CATS, datasets:[
+      {label:`Created (Q${q})`, data:JC[q], backgroundColor:'rgba(0,212,106,0.18)', borderColor:'#00D46A', borderWidth:1.3, borderRadius:4},
+      {label:'Separated',       data:JS,    backgroundColor:'rgba(255,84,104,0.15)', borderColor:'#FF5468', borderWidth:1.3, borderRadius:4},
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      interaction:{ mode:'index', intersect:false },
+      plugins:{ legend:{ labels:{ boxWidth:10, color:cssVar('--muted') } }, tooltip:{ backgroundColor:cssVar('--panel'), borderColor:cssVar('--border2'), borderWidth:1, padding:10, titleColor:cssVar('--text'), bodyColor:cssVar('--muted') } },
+      scales:{ x:{ grid:{color:cssVar('--border')}, ticks:{font:{size:10}} }, y:{ grid:{color:cssVar('--border')} } }
     }
   });
-
-  const totalCreated = created[q].reduce((a,b) => a+b, 0);
-  const totalSeparated = separated.reduce((a,b) => a+b, 0);
-  const net = totalCreated - totalSeparated;
-
+  const tc = JC[q].reduce((a,b)=>a+b,0);
+  const ts = JS.reduce((a,b)=>a+b,0);
+  const net = tc - ts;
   document.getElementById('jcsTitle').textContent = `Jobs Created vs Separated · Q${q} 2024`;
   document.getElementById('insightJcs').innerHTML =
-    `<strong>Quarter view:</strong> Q${q} recorded ${totalCreated.toLocaleString()} jobs created against ${totalSeparated.toLocaleString()} separations, leaving a net ${net >= 0 ? 'gain' : 'loss'} of <strong>${Math.abs(net).toLocaleString()}</strong>.`;
+    `<strong>Q${q} view:</strong> ${tc.toLocaleString()} jobs created against ${ts.toLocaleString()} separations — net <strong>${net>0?'+':''}${net.toLocaleString()}</strong>.`;
 }
 
 function renderTrend(){
-  const totals = [
-    [820,750,420,180,610,980,380,183].reduce((a,b)=>a+b,0),
-    [390,356,200,85,290,465,181,83].reduce((a,b)=>a+b,0),
-    [350,320,180,77,261,419,163,78].reduce((a,b)=>a+b,0)
-  ];
-
+  const totals = [1,2,3].map(q=>JC[q].reduce((a,b)=>a+b,0));
   destroyChart('trend');
-  state.charts.trend = new Chart(document.getElementById('chartTrend'), {
-    type: 'bar',
-    data: {
-      labels: ['Q1 2024', 'Q2 2024', 'Q3 2024'],
-      datasets: [
-        {
-          label: 'Jobs Created',
-          data: totals,
-          backgroundColor: ['rgba(0,212,106,0.72)','rgba(0,212,106,0.46)','rgba(0,212,106,0.26)'],
-          borderColor: '#00D46A',
-          borderWidth: 1.3,
-          borderRadius: 6
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border') } },
-        y: { grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--border') }, ticks: { callback: v => Number(v).toLocaleString() } }
-      }
+  S.charts.trend = new Chart(document.getElementById('chartTrend'),{
+    type:'bar',
+    data:{ labels:['Q1 2024','Q2 2024','Q3 2024'], datasets:[{
+      label:'Jobs Created', data:totals,
+      backgroundColor:['rgba(0,212,106,0.72)','rgba(0,212,106,0.48)','rgba(0,212,106,0.28)'],
+      borderColor:'#00D46A', borderWidth:1.3, borderRadius:6
+    }]},
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:cssVar('--panel'), borderColor:cssVar('--border2'), borderWidth:1, padding:10, titleColor:cssVar('--text'), bodyColor:cssVar('--muted') } },
+      scales:{ x:{grid:{color:cssVar('--border')}}, y:{grid:{color:cssVar('--border')}, ticks:{callback:v=>Number(v).toLocaleString()}} }
     }
   });
-
-  const trend = totals[2] < totals[0] ? 'Job creation cooled across the quarter sequence.' : 'Job creation improved across the quarter sequence.';
-  document.getElementById('insightTrend').innerHTML = `<strong>Trend insight:</strong> ${trend}`;
+  document.getElementById('insightTrend').innerHTML =
+    `<strong>Trend insight:</strong> job creation fell from ${totals[0].toLocaleString()} in Q1 to ${totals[2].toLocaleString()} in Q3 — a ${Math.round((1-totals[2]/totals[0])*100)}% decline across the quarter sequence.`;
 }
 
-function renderMacro(){
-  const inf = sliceByRange(state.data.inf, state.macroRange);
-  const gdp = sliceByRange(state.data.gdp, state.macroRange);
-  const unem = sliceByRange(state.data.unem, state.macroRange);
-
-  document.getElementById('macroMeta').textContent =
-    state.macroRange === 'all'
-      ? 'Showing all available annual points for each macro indicator.'
-      : `Showing last ${state.macroRange} annual points per indicator`;
-
-  if (inf.length){
-    const cur = latest(inf), chg = change(inf);
-    document.getElementById('kpiInf').textContent = `${fmtNum(cur.value,1)}%`;
-    document.getElementById('subInf').innerHTML = `${cur.date} ${badgeDelta(chg, '%', false)}`;
-    document.getElementById('insightInf').innerHTML =
-      `<strong>Inflation context:</strong> the latest available annual CPI reading is ${fmtNum(cur.value,1)}%, with the selected window showing a ${Math.abs(cur.value - inf[0].value).toFixed(1)} point movement from the start of the range.`;
-    makeLineChart('inf', 'chartInf', inf.map(d => d.date), inf.map(d => d.value), '#FF5468', v => `${Number(v).toFixed(1)}%`);
-  }
-
-  if (gdp.length){
-    const cur = latest(gdp), chg = change(gdp);
-    document.getElementById('kpiGdp').textContent = `${fmtNum(cur.value,1)}%`;
-    document.getElementById('subGdp').innerHTML = `${cur.date} ${badgeDelta(chg, '%', true)}`;
-    document.getElementById('insightGdp').innerHTML =
-      `<strong>Growth context:</strong> GDP growth is currently ${fmtNum(cur.value,1)}%, and the selected window shows a ${Math.abs(cur.value - gdp[0].value).toFixed(1)} point shift from the first point.`;
-    makeLineChart('gdp', 'chartGdp', gdp.map(d => d.date), gdp.map(d => d.value), '#00D46A', v => `${Number(v).toFixed(1)}%`);
-  }
-
-  if (unem.length){
-    const cur = latest(unem), chg = change(unem);
-    document.getElementById('kpiUnem').textContent = `${fmtNum(cur.value,1)}%`;
-    document.getElementById('subUnem').innerHTML = `${cur.date} ${badgeDelta(chg, '%', false)}`;
-    document.getElementById('insightUnem').innerHTML =
-      `<strong>Labour context:</strong> unemployment is ${fmtNum(cur.value,1)}%, and the selected window changed by ${Math.abs(cur.value - unem[0].value).toFixed(1)} points from the start of the slice.`;
-    makeLineChart('unem', 'chartUnem', unem.map(d => d.date), unem.map(d => d.value), '#38BDF8', v => `${Number(v).toFixed(1)}%`);
-  }
-
-  const pulse =
-    inf.length && gdp.length && unem.length
-      ? ((gdp.at(-1).value - unem.at(-1).value) + (10 - inf.at(-1).value)).toFixed(1)
-      : '—';
-
-  document.getElementById('macroPulse').textContent = pulse;
-  document.getElementById('macroPulseText').textContent =
-    pulse === '—'
-      ? 'Waiting for enough live macro points.'
-      : 'A quick composite snapshot generated from the latest macro readings.';
+function renderReasons(){
+  const total = REASONS.reduce((a,b)=>a+b.f,0);
+  const max   = Math.max(...REASONS.map(r=>r.f));
+  document.getElementById('reasonsBody').innerHTML = REASONS.map(r=>{
+    const pct=(r.f/total*100).toFixed(1);
+    const w=Math.round(r.f/max*158);
+    return `<tr><td>${r.r}</td><td>${r.f.toLocaleString()}</td><td class="pct-num">${pct}%</td><td><div class="bar-bg"><div class="bar-fill" style="width:${w}px"></div></div></td></tr>`;
+  }).join('');
 }
 
-function renderFx(){
-  const fx = sliceByRange(state.data.fx, state.fxRange);
-  document.getElementById('fxRangeMeta').textContent =
-    `Showing ${state.fxRange} days of USD/NGN reference data.`;
-
-  if (fx.length){
-    const cur = latest(fx);
-    const chg = change(fx);
-    const pct = percentChange(fx);
-    document.getElementById('fxBig').textContent = `₦${Math.round(cur.value).toLocaleString()}`;
-    document.getElementById('fxMeta').textContent = `${cur.date} · daily reference rate`;
-    document.getElementById('fxChange').textContent = `${chg >= 0 ? '▲' : '▼'} ${Math.abs(chg).toFixed(2)} ₦ ${pct !== null ? `(${Math.abs(pct).toFixed(2)}%)` : ''}`;
-
-    document.getElementById('subFx').innerHTML = `${cur.date} ${badgeDelta(chg, ' ₦', chg < 0)}`;
-    document.getElementById('insightFx').innerHTML =
-      `<strong>FX view:</strong> the last reference rate is ₦${Math.round(cur.value).toLocaleString()} per USD. Across the selected window, the move is ${pct !== null ? `${Math.abs(pct).toFixed(2)}%` : 'n/a'} relative to the first point.`;
-
-    makeLineChart('fx', 'chartFx', fx.map(d => d.date), fx.map(d => d.value), '#F5C518', v => `₦${Math.round(v).toLocaleString()}`);
-  }
-}
-
-function badgeDelta(delta, suffix, positiveIsGood = true){
-  if (delta === null || delta === undefined || Number.isNaN(delta)) return `<span class="mini-pill">No change</span>`;
-  const positive = delta > 0;
-  const upGood = positiveIsGood ? positive : !positive;
-  const cls = upGood ? 'up' : 'down';
-  const icon = positive ? '▲' : '▼';
-  return `<span class="mini-pill ${cls}">${icon} ${Math.abs(delta).toFixed(1)}${suffix}</span>`;
-}
-
-function renderAll(){
-  renderMacro();
-  renderFx();
-  renderQuarter(state.quarter);
-  renderReasons();
-  setLastRefresh();
-}
-
-/* =========================
+/* ═══════════════════════════════════════
    INTERACTIONS
-========================= */
-function setQuarter(q, el){
-  state.quarter = q;
-  document.querySelectorAll('#qTabs .tab').forEach(t => t.classList.remove('active'));
+═══════════════════════════════════════ */
+function setQuarter(q,el){
+  S.quarter=q;
+  document.querySelectorAll('#qTabs .q-tab').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
   renderQuarter(q);
 }
 
-document.getElementById('themeBtn').addEventListener('click', () => {
-  setTheme(state.theme === 'dark' ? 'light' : 'dark');
-  renderAll();
-});
+document.getElementById('themeBtn').addEventListener('click',()=>{ setTheme(S.theme==='dark'?'light':'dark'); renderMacro(); renderFx(); });
+document.getElementById('refreshBtn').addEventListener('click',()=>refreshData());
 
-document.getElementById('refreshBtn').addEventListener('click', () => refreshData());
-
-document.getElementById('macroRanges').addEventListener('click', e => {
-  const btn = e.target.closest('.range-btn');
-  if (!btn) return;
-  setActiveGroup('macroRanges', btn);
-  state.macroRange = btn.dataset.range === 'all' ? 'all' : Number(btn.dataset.range);
+document.getElementById('macroRanges').addEventListener('click',e=>{
+  const btn=e.target.closest('.range-btn'); if(!btn) return;
+  setGroup('macroRanges',btn);
+  S.macroRange = btn.dataset.range==='all'?'all':Number(btn.dataset.range);
   renderMacro();
 });
 
-document.getElementById('fxRanges').addEventListener('click', e => {
-  const btn = e.target.closest('.range-btn');
-  if (!btn) return;
-  setActiveGroup('fxRanges', btn);
-  state.fxRange = Number(btn.dataset.fxrange);
+document.getElementById('fxRanges').addEventListener('click',e=>{
+  const btn=e.target.closest('.range-btn'); if(!btn) return;
+  setGroup('fxRanges',btn);
+  S.fxRange=Number(btn.dataset.fxrange);
   renderFx();
 });
 
+/* ═══════════════════════════════════════
+   BOOT + REFRESH
+═══════════════════════════════════════ */
 async function refreshData(){
   setStatus('Refreshing live data…');
-
-  const [inf, gdp, unem, fx] = await Promise.all([
+  const [inf,gdp,unem,fx] = await Promise.all([
     fetchWB('FP.CPI.TOTL.ZG'),
     fetchWB('NY.GDP.MKTP.KD.ZG'),
     fetchWB('SL.UEM.TOTL.ZS'),
-    fetchFx(365)
+    fetchFx(),
   ]);
-
-  state.data.inf = inf;
-  state.data.gdp = gdp;
-  state.data.unem = unem;
-  state.data.fx = fx;
-
-  renderAll();
-
-  if (inf.length || gdp.length || unem.length || fx.length) {
-    setStatus('Live data updated successfully.');
-  } else {
-    setStatus('Live data temporarily unavailable. Charts will recover on the next refresh.');
-  }
+  S.data.inf=inf; S.data.gdp=gdp; S.data.unem=unem; S.data.fx=fx;
+  renderMacro();
+  await renderFx();
+  setRefreshTime();
+  setStatus(inf.length||gdp.length ? 'Live data updated successfully.' : 'World Bank API unavailable — try refreshing or check your connection.');
 }
 
-/* =========================
-   BOOT
-========================= */
 (function boot(){
-  setTheme(state.theme);
-  document.querySelector('[data-range="5"]').classList.add('active');
-  document.querySelector('[data-fxrange="30"]').classList.add('active');
-
+  setTheme(S.theme);
+  renderQuarter(1);
+  renderTrend();
+  renderReasons();
   refreshData();
-
-  setInterval(() => {
-    if (document.visibilityState === 'visible') refreshData();
-  }, 15 * 60 * 1000);
+  setInterval(()=>{ if(document.visibilityState==='visible') refreshData(); }, 15*60*1000);
 })();
 </script>
 </body>
