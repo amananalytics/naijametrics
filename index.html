@@ -1,17 +1,19 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="dark">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>NaijaMetrics — Nigeria Economic Intelligence</title>
-<meta name="description" content="Nigeria's cleanest real-time economic dashboard. Live inflation, GDP, FX and NBS job data."/>
-<meta property="og:title" content="NaijaMetrics — Nigeria Economic Intelligence"/>
-<meta property="og:description" content="Live Nigerian macro data — World Bank, Frankfurter FX, NBS Survey 2024."/>
-<meta name="theme-color" content="#05080A"/>
+<meta name="description" content="Nigeria's cleanest real-time economic dashboard. Live inflation, GDP, FX and NBS job data." />
+<meta property="og:title" content="NaijaMetrics — Nigeria Economic Intelligence" />
+<meta property="og:description" content="Live Nigerian macro data — World Bank, live FX, NBS Survey 2024." />
+<meta name="theme-color" content="#04080B" />
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Azeret+Mono:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
 <style>
 :root{
   --bg:#04080B;
@@ -32,206 +34,835 @@
   --mono:'Azeret Mono','IBM Plex Mono',monospace;
 }
 html[data-theme="light"]{
-  --bg:#F2F6F4;--bg2:#EAF0EE;--panel:#FFFFFF;--panel2:#F6FAF8;--panel3:#EEF4F1;
-  --text:#0B1114;--muted:#58707A;--border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.13);
-  --lime:#007A3D;--danger:#D63650;--gold:#A07C0A;--blue:#0369A1;
+  --bg:#F2F6F4;
+  --bg2:#EAF0EE;
+  --panel:#FFFFFF;
+  --panel2:#F6FAF8;
+  --panel3:#EEF4F1;
+  --text:#0B1114;
+  --muted:#58707A;
+  --border:rgba(0,0,0,0.07);
+  --border2:rgba(0,0,0,0.13);
+  --lime:#007A3D;
+  --danger:#D63650;
+  --gold:#A07C0A;
+  --blue:#0369A1;
 }
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+*,
+*::before,
+*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{
-  background:var(--bg);color:var(--text);font-family:var(--mono);
-  font-size:13px;line-height:1.65;overflow-x:hidden;cursor:none;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--mono);
+  font-size:13px;
+  line-height:1.65;
+  overflow-x:hidden;
 }
 a{color:inherit;text-decoration:none}
-button{font:inherit;cursor:none}
+button{font:inherit}
+canvas{display:block;max-width:100%}
 
-/* ── PARTICLE CANVAS ── */
-#particleCanvas{
-  position:fixed;inset:0;pointer-events:none;z-index:9998;
+@media (pointer:fine){
+  body{cursor:none}
+  a,button,.tab,.theme-btn,.refresh-btn,.metric-btn,.chip{cursor:none}
 }
 
-/* ── NAV ── */
+#bgCanvas,
+#particleCanvas{
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+}
+#bgCanvas{z-index:0}
+#particleCanvas{z-index:9998}
+
+.topbar,
+.shell{
+  position:relative;
+  z-index:2;
+}
+
 .topbar{
-  position:sticky;top:.75rem;z-index:200;
+  position:sticky;
+  top:.75rem;
+  z-index:200;
   margin:.75rem 1.5rem 0;
   background:color-mix(in srgb,var(--panel) 85%,transparent);
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
-  border:1px solid var(--border);border-radius:20px;
-  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--border);
+  border-radius:20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:1rem;
   padding:.85rem 1.1rem;
   box-shadow:0 16px 50px rgba(0,0,0,0.18);
 }
 .brand{display:flex;align-items:center;gap:.7rem}
-.flag{width:28px;height:19px;border-radius:5px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr 1fr;border:1px solid var(--border2);flex-shrink:0}
+.flag{
+  width:28px;
+  height:19px;
+  border-radius:5px;
+  overflow:hidden;
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  border:1px solid var(--border2);
+  flex-shrink:0;
+}
 .flag span:nth-child(1){background:#008751}
 .flag span:nth-child(2){background:#fff}
 .flag span:nth-child(3){background:#008751}
-.brand-name{font-family:var(--brig);font-size:1.1rem;font-weight:800;letter-spacing:-0.04em}
+.brand-name{
+  font-family:var(--brig);
+  font-size:1.1rem;
+  font-weight:800;
+  letter-spacing:-0.04em;
+}
 .brand-name em{font-style:normal;color:var(--lime)}
-.nav-links{display:flex;align-items:center;gap:.85rem;flex-wrap:wrap;justify-content:flex-end}
-.nav-links a{font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);transition:color .2s}
+.nav-links{
+  display:flex;
+  align-items:center;
+  gap:.85rem;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+.nav-links a{
+  font-size:.6rem;
+  letter-spacing:.15em;
+  text-transform:uppercase;
+  color:var(--muted);
+  transition:color .2s;
+}
 .nav-links a:hover{color:var(--text)}
-.live-pill{display:inline-flex;align-items:center;gap:.4rem;padding:.35rem .7rem;border-radius:999px;background:rgba(0,212,106,0.07);border:1px solid rgba(0,212,106,0.18);color:var(--lime);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;white-space:nowrap}
-.dot-anim{width:6px;height:6px;border-radius:50%;background:var(--lime);animation:dotpulse 2s infinite}
-@keyframes dotpulse{0%{box-shadow:0 0 0 0 rgba(0,212,106,.5)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
-.icon-btn{border:1px solid var(--border2);background:var(--panel2);color:var(--text);border-radius:12px;padding:.6rem .85rem;font-size:.7rem;transition:transform .18s,border-color .18s}
-.icon-btn:hover{transform:translateY(-1px);border-color:var(--lime)}
+.live-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:.4rem;
+  padding:.35rem .7rem;
+  border-radius:999px;
+  background:rgba(0,212,106,0.07);
+  border:1px solid rgba(0,212,106,0.18);
+  color:var(--lime);
+  font-size:.58rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.dot-anim{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:var(--lime);
+  animation:dotpulse 2s infinite;
+}
+@keyframes dotpulse{
+  0%{box-shadow:0 0 0 0 rgba(0,212,106,.5)}
+  70%{box-shadow:0 0 0 8px transparent}
+  100%{box-shadow:0 0 0 0 transparent}
+}
+.icon-btn{
+  border:1px solid var(--border2);
+  background:var(--panel2);
+  color:var(--text);
+  border-radius:12px;
+  padding:.6rem .85rem;
+  font-size:.7rem;
+  transition:transform .18s,border-color .18s;
+}
+.icon-btn:hover{
+  transform:translateY(-1px);
+  border-color:var(--lime);
+}
 
-/* ── TICKER ── */
-.ticker{background:var(--green);overflow:hidden;padding:.42rem 0;border-bottom:1px solid rgba(0,0,0,.25)}
-.ticker-inner{display:flex;gap:2.5rem;white-space:nowrap;animation:tickslide 55s linear infinite}
-@keyframes tickslide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.ticker-inner span{font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.85);display:inline-flex;align-items:center;gap:.55rem}
-.ticker-inner span::before{content:'★';font-size:.45rem;opacity:.65}
+.ticker{
+  background:var(--green);
+  overflow:hidden;
+  padding:.42rem 0;
+  border-bottom:1px solid rgba(0,0,0,.25);
+}
+.ticker-inner{
+  display:flex;
+  gap:2.5rem;
+  white-space:nowrap;
+  animation:tickslide 55s linear infinite;
+}
+@keyframes tickslide{
+  from{transform:translateX(0)}
+  to{transform:translateX(-50%)}
+}
+.ticker-inner span{
+  font-size:.58rem;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:rgba(255,255,255,.85);
+  display:inline-flex;
+  align-items:center;
+  gap:.55rem;
+}
+.ticker-inner span::before{
+  content:'★';
+  font-size:.45rem;
+  opacity:.65;
+}
 
-/* ── SHELL ── */
-.shell{width:min(1400px,calc(100% - 3rem));margin:0 auto;padding:1.25rem 0 4rem}
+.shell{
+  width:min(1400px,calc(100% - 3rem));
+  margin:0 auto;
+  padding:1.25rem 0 4rem;
+}
 
-/* ── HERO ── */
-.hero{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(300px,.85fr);gap:1.25rem;margin-bottom:1rem}
-.card{background:var(--panel);border:1px solid var(--border);border-radius:24px}
-.hero-main{padding:2.25rem 2rem;position:relative;overflow:hidden}
-.hero-main::after{content:'';position:absolute;right:-80px;bottom:-80px;width:380px;height:380px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,106,.1),transparent 65%);pointer-events:none}
-.kicker{display:flex;align-items:center;gap:.8rem;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:1.1rem}
+.hero{
+  display:grid;
+  grid-template-columns:minmax(0,1.4fr) minmax(300px,.85fr);
+  gap:1.25rem;
+  margin-bottom:1rem;
+}
+.card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:24px;
+  box-shadow:0 16px 50px rgba(0,0,0,0.08);
+}
+.hero-main{
+  padding:2.25rem 2rem;
+  position:relative;
+  overflow:hidden;
+}
+.hero-main::after{
+  content:'';
+  position:absolute;
+  right:-80px;
+  bottom:-80px;
+  width:380px;
+  height:380px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(0,212,106,.1),transparent 65%);
+  pointer-events:none;
+}
+.kicker{
+  display:flex;
+  align-items:center;
+  gap:.8rem;
+  font-size:.6rem;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:1.1rem;
+}
 .kicker-line{width:2.5rem;height:1px;background:var(--lime)}
-.hero-h1{font-family:var(--brig);font-size:clamp(3.5rem,8vw,7rem);font-weight:800;line-height:.88;letter-spacing:-0.05em;margin-bottom:1.5rem}
-.hero-h1 em{font-style:normal;color:transparent;-webkit-text-stroke:1.5px var(--lime)}
-.hero-desc{font-size:.8rem;color:var(--muted);max-width:55ch;line-height:1.95;margin-bottom:2rem}
+.hero-h1{
+  font-family:var(--brig);
+  font-size:clamp(3.5rem,8vw,7rem);
+  font-weight:800;
+  line-height:.88;
+  letter-spacing:-0.05em;
+  margin-bottom:1.5rem;
+}
+.hero-h1 em{
+  font-style:normal;
+  color:transparent;
+  -webkit-text-stroke:1.5px var(--lime);
+}
+.hero-desc{
+  font-size:.8rem;
+  color:var(--muted);
+  max-width:55ch;
+  line-height:1.95;
+  margin-bottom:2rem;
+}
 .hero-desc strong{color:var(--text);font-weight:500}
-.hero-ctas{display:flex;gap:.85rem;flex-wrap:wrap;align-items:center;margin-bottom:1.4rem}
-.btn-fill{background:var(--lime);color:#000;font-family:var(--brig);font-weight:700;border:none;border-radius:12px;padding:.85rem 1.35rem;font-size:.78rem;transition:transform .2s,box-shadow .2s}
-.btn-fill:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,212,106,.25)}
-.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text);border-radius:12px;padding:.85rem 1.35rem;font-size:.78rem;transition:transform .2s,border-color .2s}
-.btn-ghost:hover{transform:translateY(-2px);border-color:var(--lime)}
-.hero-chips{display:flex;gap:.55rem;flex-wrap:wrap}
-.chip{padding:.38rem .65rem;background:var(--panel2);border:1px solid var(--border);border-radius:999px;font-size:.62rem;color:var(--muted)}
-.status-line{margin-top:1rem;font-size:.68rem;color:var(--muted)}
+.hero-ctas{
+  display:flex;
+  gap:.85rem;
+  flex-wrap:wrap;
+  align-items:center;
+  margin-bottom:1.4rem;
+}
+.btn-fill{
+  background:var(--lime);
+  color:#000;
+  font-family:var(--brig);
+  font-weight:700;
+  border:none;
+  border-radius:12px;
+  padding:.85rem 1.35rem;
+  font-size:.78rem;
+  transition:transform .2s,box-shadow .2s;
+}
+.btn-fill:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 28px rgba(0,212,106,.25);
+}
+.btn-ghost{
+  background:transparent;
+  border:1px solid var(--border2);
+  color:var(--text);
+  border-radius:12px;
+  padding:.85rem 1.35rem;
+  font-size:.78rem;
+  transition:transform .2s,border-color .2s;
+}
+.btn-ghost:hover{
+  transform:translateY(-2px);
+  border-color:var(--lime);
+}
+.hero-chips{
+  display:flex;
+  gap:.55rem;
+  flex-wrap:wrap;
+}
+.chip{
+  padding:.38rem .65rem;
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-radius:999px;
+  font-size:.62rem;
+  color:var(--muted);
+}
+.status-line{
+  margin-top:1rem;
+  font-size:.68rem;
+  color:var(--muted);
+  line-height:1.8;
+}
 
-/* ── HERO SIDE ── */
-.hero-side{display:grid;gap:1rem}
+.hero-side{
+  display:grid;
+  gap:1rem;
+}
 .map-card{padding:1.1rem}
-.map-wrap{position:relative;width:100%;aspect-ratio:1;display:grid;place-items:center}
-.map-ring{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(0,212,106,.1);animation:mapring 4s ease-in-out infinite}
+.map-wrap{
+  position:relative;
+  width:100%;
+  aspect-ratio:1;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+}
+.map-ring{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  border:1px solid rgba(0,212,106,.1);
+  animation:mapring 4s ease-in-out infinite;
+}
 .map-ring:nth-child(2){inset:14%;animation-delay:.7s}
 .map-ring:nth-child(3){inset:28%;animation-delay:1.4s}
-@keyframes mapring{0%,100%{opacity:.3}50%{opacity:.75}}
-.map-svg{width:76%;height:auto;filter:drop-shadow(0 0 28px rgba(0,212,106,.18))}
-.map-pin{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 0 rgba(0,212,106,.55);animation:dotpulse 2s infinite;top:44%;left:47%}
-.feed-card{padding:1rem;display:grid;gap:.6rem}
-.feed-row{display:flex;justify-content:space-between;align-items:center;padding:.62rem .75rem;border-radius:14px;background:var(--panel2);border:1px solid var(--border)}
-.feed-label{font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.feed-val{font-family:var(--brig);font-size:.92rem;font-weight:700;letter-spacing:-0.03em}
+@keyframes mapring{
+  0%,100%{opacity:.3}
+  50%{opacity:.75}
+}
+.map-svg{
+  width:76%;
+  height:auto;
+  filter:drop-shadow(0 0 28px rgba(0,212,106,.18));
+}
+.map-pin{
+  position:absolute;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:var(--lime);
+  box-shadow:0 0 0 0 rgba(0,212,106,.55);
+  animation:dotpulse 2s infinite;
+  top:44%;
+  left:47%;
+}
+.feed-card{
+  padding:1rem;
+  display:grid;
+  gap:.6rem;
+}
+.feed-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:.62rem .75rem;
+  border-radius:14px;
+  background:var(--panel2);
+  border:1px solid var(--border);
+}
+.feed-label{
+  font-size:.6rem;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.feed-val{
+  font-family:var(--brig);
+  font-size:.92rem;
+  font-weight:700;
+  letter-spacing:-0.03em;
+}
 
-/* ── KPI GRID ── */
-.kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin-bottom:1rem}
-.kpi{padding:1.5rem;position:relative;overflow:hidden;transition:transform .2s}
+.kpi-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:1rem;
+  margin-bottom:1rem;
+}
+.kpi{
+  padding:1.5rem;
+  position:relative;
+  overflow:hidden;
+  transition:transform .2s;
+}
 .kpi:hover{transform:translateY(-2px)}
-.kpi::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;background:var(--kpi-accent,var(--lime));transform:scaleX(0);transform-origin:left;transition:transform .35s}
+.kpi::before{
+  content:'';
+  position:absolute;
+  top:0;
+  left:0;
+  width:100%;
+  height:2px;
+  background:var(--kpi-accent,var(--lime));
+  transform:scaleX(0);
+  transform-origin:left;
+  transition:transform .35s;
+}
 .kpi:hover::before{transform:scaleX(1)}
 .kpi-icon{font-size:1.1rem;margin-bottom:.5rem;opacity:.75}
-.kpi-label{font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:.45rem}
-.kpi-val{font-family:var(--brig);font-size:clamp(1.8rem,4vw,3rem);font-weight:800;line-height:1;letter-spacing:-0.05em;margin-bottom:.25rem}
-.kpi-sub{font-size:.62rem;color:var(--muted);line-height:1.5;min-height:2.2em;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
-.delta{display:inline-flex;align-items:center;gap:.15rem;font-size:.6rem;padding:.18rem .4rem;border-radius:999px;background:var(--panel2);border:1px solid var(--border)}
-.delta.up{color:var(--danger)}.delta.down{color:var(--lime)}.delta.flat{color:var(--muted)}
-.col-red{color:var(--danger)}.col-lime{color:var(--lime)}.col-gold{color:var(--gold)}.col-blue{color:var(--blue)}
+.kpi-label{
+  font-size:.58rem;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:.45rem;
+}
+.kpi-val{
+  font-family:var(--brig);
+  font-size:clamp(1.8rem,4vw,3rem);
+  font-weight:800;
+  line-height:1;
+  letter-spacing:-0.05em;
+  margin-bottom:.25rem;
+}
+.kpi-sub{
+  font-size:.62rem;
+  color:var(--muted);
+  line-height:1.5;
+  min-height:2.2em;
+  display:flex;
+  align-items:center;
+  gap:.4rem;
+  flex-wrap:wrap;
+}
+.delta{
+  display:inline-flex;
+  align-items:center;
+  gap:.15rem;
+  font-size:.6rem;
+  padding:.18rem .4rem;
+  border-radius:999px;
+  background:var(--panel2);
+  border:1px solid var(--border);
+}
+.delta.up{color:var(--danger)}
+.delta.down{color:var(--lime)}
+.delta.flat{color:var(--muted)}
+.col-red{color:var(--danger)}
+.col-lime{color:var(--lime)}
+.col-gold{color:var(--gold)}
+.col-blue{color:var(--blue)}
 
-/* ── SECTIONS ── */
-.section{padding:1.75rem;margin-bottom:1rem}
-.sec-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
-.sec-title{font-family:var(--brig);font-size:clamp(1.3rem,3vw,2rem);font-weight:800;letter-spacing:-0.04em;margin-bottom:.25rem}
-.sec-desc{font-size:.72rem;color:var(--muted);max-width:44ch;text-align:right;line-height:1.8}
+.section{
+  padding:1.75rem;
+  margin-bottom:1rem;
+}
+.sec-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:1rem;
+  margin-bottom:1.25rem;
+  padding-bottom:1rem;
+  border-bottom:1px solid var(--border);
+}
+.sec-title{
+  font-family:var(--brig);
+  font-size:clamp(1.3rem,3vw,2rem);
+  font-weight:800;
+  letter-spacing:-0.04em;
+  margin-bottom:.25rem;
+}
+.sec-desc{
+  font-size:.72rem;
+  color:var(--muted);
+  max-width:44ch;
+  text-align:right;
+  line-height:1.8;
+}
 
-/* ── CONTROLS ── */
-.controls{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem}
+.controls{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:.75rem;
+  margin-bottom:1rem;
+}
 .btn-group{display:flex;gap:.5rem;flex-wrap:wrap}
-.range-btn{border:1px solid var(--border2);background:var(--panel2);color:var(--muted);border-radius:10px;padding:.55rem .85rem;font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;transition:all .18s}
-.range-btn.active{color:var(--lime);border-color:rgba(0,212,106,.28);background:rgba(0,212,106,.07)}
-.range-btn:hover:not(.active){color:var(--text);border-color:var(--border2)}
-.ctrl-meta{font-size:.68rem;color:var(--muted)}
+.range-btn{
+  border:1px solid var(--border2);
+  background:var(--panel2);
+  color:var(--muted);
+  border-radius:10px;
+  padding:.55rem .85rem;
+  font-size:.6rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  transition:all .18s;
+}
+.range-btn.active{
+  color:var(--lime);
+  border-color:rgba(0,212,106,.28);
+  background:rgba(0,212,106,.07);
+}
+.range-btn:hover:not(.active){
+  color:var(--text);
+  border-color:var(--border2);
+}
+.ctrl-meta{
+  font-size:.68rem;
+  color:var(--muted);
+}
 
-/* ── CHART GRIDS ── */
-.chart-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin-bottom:1rem}
-.chart-3{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,.9fr);gap:1rem;margin-bottom:1rem}
+.chart-2{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:1rem;
+  margin-bottom:1rem;
+}
+.chart-3{
+  display:grid;
+  grid-template-columns:minmax(0,1.4fr) minmax(0,.9fr);
+  gap:1rem;
+  margin-bottom:1rem;
+}
 .chart-box{padding:1.35rem}
-.chart-top{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;margin-bottom:1rem}
-.chart-name{font-family:var(--brig);font-size:.98rem;font-weight:700;letter-spacing:-0.03em;margin-bottom:.2rem}
-.chart-src{font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.badge{font-size:.55rem;letter-spacing:.14em;text-transform:uppercase;padding:.22rem .55rem;border-radius:999px;border:1px solid rgba(0,212,106,.2);color:var(--lime);background:rgba(0,212,106,.07);white-space:nowrap}
-.canvas-wrap{height:260px;position:relative}
+.chart-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:1rem;
+  margin-bottom:1rem;
+}
+.chart-name{
+  font-family:var(--brig);
+  font-size:.98rem;
+  font-weight:700;
+  letter-spacing:-0.03em;
+  margin-bottom:.2rem;
+}
+.chart-src{
+  font-size:.58rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.badge{
+  font-size:.55rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  padding:.22rem .55rem;
+  border-radius:999px;
+  border:1px solid rgba(0,212,106,.2);
+  color:var(--lime);
+  background:rgba(0,212,106,.07);
+  white-space:nowrap;
+}
+.canvas-wrap{
+  height:260px;
+  position:relative;
+}
 .canvas-wrap.tall{height:310px}
 canvas{width:100%!important;height:100%!important}
-.insight{margin-top:.85rem;font-size:.72rem;line-height:1.75;color:var(--muted)}
+.insight{
+  margin-top:.85rem;
+  font-size:.72rem;
+  line-height:1.75;
+  color:var(--muted);
+}
 .insight strong{color:var(--text);font-weight:500}
 
-/* ── FX ── */
-.fx-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:1rem;margin-bottom:1rem}
-.rate-box{padding:1.5rem;display:grid;gap:.85rem}
-.rate-big{font-family:var(--brig);font-size:clamp(2rem,5vw,4rem);font-weight:800;line-height:1;letter-spacing:-0.06em}
-.rate-pills{display:flex;gap:.5rem;flex-wrap:wrap}
-.rate-pill{padding:.35rem .65rem;border-radius:999px;font-size:.62rem;border:1px solid var(--border);color:var(--muted);background:var(--panel2)}
+.fx-grid{
+  display:grid;
+  grid-template-columns:1.1fr .9fr;
+  gap:1rem;
+  margin-bottom:1rem;
+}
+.rate-box{
+  padding:1.5rem;
+  display:grid;
+  gap:.85rem;
+}
+.rate-big{
+  font-family:var(--brig);
+  font-size:clamp(2rem,5vw,4rem);
+  font-weight:800;
+  line-height:1;
+  letter-spacing:-0.06em;
+}
+.rate-pills{
+  display:flex;
+  gap:.5rem;
+  flex-wrap:wrap;
+}
+.rate-pill{
+  padding:.35rem .65rem;
+  border-radius:999px;
+  font-size:.62rem;
+  border:1px solid var(--border);
+  color:var(--muted);
+  background:var(--panel2);
+}
+.fx-gauge{
+  height:12px;
+  border-radius:999px;
+  background:var(--border);
+  overflow:hidden;
+}
+.fx-gauge-fill{
+  height:100%;
+  width:50%;
+  background:linear-gradient(90deg,var(--lime),var(--gold),var(--danger));
+  border-radius:999px;
+  transition:width .35s ease;
+}
 
-/* ── MACRO PULSE ── */
-.pulse-box{display:grid;place-items:center;text-align:center;height:100%;padding:2rem}
-.pulse-num{font-family:var(--brig);font-size:clamp(2.5rem,6vw,4.5rem);font-weight:800;letter-spacing:-0.06em;margin-bottom:.5rem}
-.pulse-label{font-size:.7rem;color:var(--muted);max-width:28ch;line-height:1.7}
+.pulse-box{
+  display:grid;
+  place-items:center;
+  text-align:center;
+  height:100%;
+  padding:2rem;
+}
+.pulse-num{
+  font-family:var(--brig);
+  font-size:clamp(2.5rem,6vw,4.5rem);
+  font-weight:800;
+  letter-spacing:-0.06em;
+  margin-bottom:.5rem;
+}
+.pulse-label{
+  font-size:.7rem;
+  color:var(--muted);
+  max-width:28ch;
+  line-height:1.7;
+}
 
-/* ── FYP ── */
-.fyp-header{background:color-mix(in srgb,var(--panel2) 80%,transparent);border:1px solid var(--border2);border-left:3px solid var(--lime);border-radius:0 16px 16px 0;padding:1.1rem 1.35rem;margin-bottom:1.25rem;display:flex;align-items:flex-start;gap:.85rem}
-.fyp-badge{background:var(--lime);color:#000;font-family:var(--brig);font-weight:700;font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;padding:.25rem .6rem;border-radius:6px;white-space:nowrap;margin-top:.05rem;flex-shrink:0}
-.fyp-text{font-size:.7rem;color:var(--muted);line-height:1.8}
+.fyp-header{
+  background:color-mix(in srgb,var(--panel2) 80%,transparent);
+  border:1px solid var(--border2);
+  border-left:3px solid var(--lime);
+  border-radius:0 16px 16px 0;
+  padding:1.1rem 1.35rem;
+  margin-bottom:1.25rem;
+  display:flex;
+  align-items:flex-start;
+  gap:.85rem;
+}
+.fyp-badge{
+  background:var(--lime);
+  color:#000;
+  font-family:var(--brig);
+  font-weight:700;
+  font-size:.55rem;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  padding:.25rem .6rem;
+  border-radius:6px;
+  white-space:nowrap;
+  margin-top:.05rem;
+  flex-shrink:0;
+}
+.fyp-text{
+  font-size:.7rem;
+  color:var(--muted);
+  line-height:1.8;
+}
 .fyp-text strong{color:var(--text);font-weight:500}
 
-/* ── Q TABS ── */
-.q-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.85rem;margin-bottom:1rem}
-.q-tab{padding:1.1rem;background:var(--panel2);border:1px solid var(--border);border-radius:18px;transition:all .2s;border-bottom:2px solid transparent}
-.q-tab:not([data-nodrop]):hover{transform:translateY(-2px);border-color:rgba(0,212,106,.22)}
-.q-tab.active{background:rgba(0,212,106,.06);border-color:rgba(0,212,106,.22);border-bottom-color:var(--lime)}
-.q-num{font-family:var(--brig);font-size:1.75rem;font-weight:800;line-height:1;color:var(--muted);margin-bottom:.2rem;transition:color .2s}
+.q-tabs{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:.85rem;
+  margin-bottom:1rem;
+}
+.q-tab{
+  padding:1.1rem;
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-radius:18px;
+  transition:all .2s;
+  border-bottom:2px solid transparent;
+}
+.q-tab:not([data-nodrop]):hover{
+  transform:translateY(-2px);
+  border-color:rgba(0,212,106,.22);
+}
+.q-tab.active{
+  background:rgba(0,212,106,.06);
+  border-color:rgba(0,212,106,.22);
+  border-bottom-color:var(--lime);
+}
+.q-num{
+  font-family:var(--brig);
+  font-size:1.75rem;
+  font-weight:800;
+  line-height:1;
+  color:var(--muted);
+  margin-bottom:.2rem;
+  transition:color .2s;
+}
 .q-tab.active .q-num{color:var(--lime)}
-.q-lbl{font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.q-sub{font-size:.72rem;color:var(--text);margin-top:.25rem}
+.q-lbl{
+  font-size:.58rem;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.q-sub{
+  font-size:.72rem;
+  color:var(--text);
+  margin-top:.25rem;
+}
 
-/* ── TABLE ── */
-.data-tbl{width:100%;border-collapse:collapse;margin-top:.75rem}
-.data-tbl th{font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);padding:.7rem .65rem;text-align:left;border-bottom:1px solid var(--border)}
-.data-tbl td{padding:.8rem .65rem;font-size:.72rem;border-bottom:1px solid var(--border);vertical-align:middle}
+.data-tbl{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:.75rem;
+}
+.data-tbl th{
+  font-size:.58rem;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--muted);
+  padding:.7rem .65rem;
+  text-align:left;
+  border-bottom:1px solid var(--border);
+}
+.data-tbl td{
+  padding:.8rem .65rem;
+  font-size:.72rem;
+  border-bottom:1px solid var(--border);
+  vertical-align:middle;
+}
 .data-tbl tr:hover td{background:color-mix(in srgb,var(--panel2) 70%,transparent)}
-.bar-bg{width:160px;height:5px;border-radius:999px;background:var(--border);overflow:hidden}
-.bar-fill{height:100%;border-radius:999px;background:var(--lime);transition:width .8s ease}
-.pct-num{font-family:var(--brig);font-weight:700;font-size:.95rem;color:var(--lime);min-width:3.5rem}
+.bar-bg{
+  width:160px;
+  height:5px;
+  border-radius:999px;
+  background:var(--border);
+  overflow:hidden;
+}
+.bar-fill{
+  height:100%;
+  border-radius:999px;
+  background:var(--lime);
+  transition:width .8s ease;
+}
+.pct-num{
+  font-family:var(--brig);
+  font-weight:700;
+  font-size:.95rem;
+  color:var(--lime);
+  min-width:3.5rem;
+}
 
-/* ── METHOD ── */
-.method-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+.method-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:1rem;
+}
 .method-card{padding:1.35rem}
-.method-icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--panel2);border:1px solid var(--border);font-size:1.05rem;margin-bottom:1rem}
-.method-name{font-family:var(--brig);font-size:.95rem;font-weight:700;margin-bottom:.5rem}
-.method-body{font-size:.72rem;color:var(--muted);line-height:1.85}
+.method-icon{
+  width:40px;
+  height:40px;
+  border-radius:12px;
+  display:grid;
+  place-items:center;
+  background:var(--panel2);
+  border:1px solid var(--border);
+  font-size:1.05rem;
+  margin-bottom:1rem;
+}
+.method-name{
+  font-family:var(--brig);
+  font-size:.95rem;
+  font-weight:700;
+  margin-bottom:.5rem;
+}
+.method-body{
+  font-size:.72rem;
+  color:var(--muted);
+  line-height:1.85;
+}
 
-/* ── FOOTER ── */
-.footer{padding:1.5rem 1.75rem 2rem;margin-bottom:0}
-.footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:1.5rem;margin-bottom:1.25rem}
-.footer h4{font-family:var(--brig);font-size:1rem;font-weight:700;margin-bottom:.6rem}
-.footer p{font-size:.72rem;color:var(--muted);line-height:1.85}
-.footer-links{display:flex;flex-direction:column;gap:.4rem}
-.footer-links a{font-size:.72rem;color:var(--muted);transition:color .18s}
+.footer{
+  padding:1.5rem 1.75rem 2rem;
+  margin-bottom:0;
+}
+.footer-grid{
+  display:grid;
+  grid-template-columns:1.4fr 1fr 1fr;
+  gap:1.5rem;
+  margin-bottom:1.25rem;
+}
+.footer h4{
+  font-family:var(--brig);
+  font-size:1rem;
+  font-weight:700;
+  margin-bottom:.6rem;
+}
+.footer p{
+  font-size:.72rem;
+  color:var(--muted);
+  line-height:1.85;
+}
+.footer-links{
+  display:flex;
+  flex-direction:column;
+  gap:.4rem;
+}
+.footer-links a{
+  font-size:.72rem;
+  color:var(--muted);
+  transition:color .18s;
+}
 .footer-links a:hover{color:var(--lime)}
-.footer-bottom{padding-top:1rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem;font-size:.62rem;color:var(--muted)}
+.footer-bottom{
+  padding-top:1rem;
+  border-top:1px solid var(--border);
+  display:flex;
+  justify-content:space-between;
+  flex-wrap:wrap;
+  gap:.5rem;
+  font-size:.62rem;
+  color:var(--muted);
+}
 
-/* ── REVEAL ── */
-.reveal{opacity:0;transform:translateY(16px);transition:opacity .55s ease,transform .55s ease}
-.reveal.show{opacity:1;transform:none}
+.reveal{
+  opacity:0;
+  transform:translateY(16px);
+  transition:opacity .55s ease,transform .55s ease;
+}
+.reveal.show{
+  opacity:1;
+  transform:none;
+}
 
-/* ── RESPONSIVE ── */
-@media(max-width:1100px){
+@media (max-width:1100px){
   .hero{grid-template-columns:1fr}
   .hero-side{display:none}
-  .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .chart-2,.chart-3,.fx-grid,.method-grid,.footer-grid{grid-template-columns:1fr}
   .q-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}
   .sec-desc{text-align:left;max-width:none}
 }
-@media(max-width:720px){
+@media (max-width:720px){
   .shell{width:calc(100% - 1.5rem)}
   .topbar{padding:.75rem;margin:.5rem .75rem 0}
   .section,.hero-main,.footer{padding:1.25rem}
@@ -240,15 +871,20 @@ canvas{width:100%!important;height:100%!important}
   .canvas-wrap,.canvas-wrap.tall{height:220px}
   .bar-bg{width:100px}
 }
-@media(prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation:none!important;transition:none!important}
+@media (prefers-reduced-motion:reduce){
+  *,
+  *::before,
+  *::after{
+    animation:none!important;
+    transition:none!important;
+  }
 }
 </style>
 </head>
 <body>
+<canvas id="bgCanvas"></canvas>
 <canvas id="particleCanvas"></canvas>
 
-<!-- NAV -->
 <header class="topbar">
   <div class="brand">
     <div class="flag"><span></span><span></span><span></span></div>
@@ -265,18 +901,18 @@ canvas{width:100%!important;height:100%!important}
   </nav>
 </header>
 
-<!-- TICKER -->
-<div class="ticker"><div class="ticker-inner" id="tickerInner"></div></div>
+<div class="ticker">
+  <div class="ticker-inner" id="tickerInner"></div>
+</div>
 
 <div class="shell">
-  <!-- HERO -->
   <section class="hero" style="margin-top:1.25rem">
     <div class="hero-main card reveal">
       <div class="kicker"><span class="kicker-line"></span>Nigeria Economic Intelligence · Auto Refresh</div>
       <h1 class="hero-h1">NIGERIA<br>BY THE<br><em>NUMBERS.</em></h1>
       <p class="hero-desc">
         <strong>The cleanest Nigerian economic dashboard on the internet.</strong>
-        Live inflation, GDP, FX rates and NBS employment data — World Bank + Frankfurter API,
+        Live inflation, GDP, FX rates and NBS employment data — World Bank plus live FX feed,
         refreshed automatically. No PDFs. No government portals. No friction.
       </p>
       <div class="hero-ctas">
@@ -285,17 +921,21 @@ canvas{width:100%!important;height:100%!important}
       </div>
       <div class="hero-chips">
         <span class="chip">World Bank macro</span>
-        <span class="chip">Frankfurter FX feed</span>
+        <span class="chip">Live FX feed</span>
         <span class="chip">Dark / Light mode</span>
         <span class="chip">Auto-refresh 15 min</span>
         <span class="chip">GitHub Pages</span>
       </div>
       <div class="status-line" id="statusLine">Loading live data…</div>
     </div>
+
     <div class="hero-side reveal">
       <div class="map-card card">
         <div class="map-wrap">
-          <div class="map-ring"></div><div class="map-ring"></div><div class="map-ring"></div>
+          <div class="map-ring"></div>
+          <div class="map-ring"></div>
+          <div class="map-ring"></div>
+
           <svg class="map-svg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg" aria-label="Nigeria map outline">
             <defs>
               <linearGradient id="mg" x1="0" y1="0" x2="1" y2="1">
@@ -324,16 +964,16 @@ canvas{width:100%!important;height:100%!important}
           <div class="map-pin"></div>
         </div>
       </div>
+
       <div class="feed-card card">
         <div class="feed-row"><span class="feed-label">Last refresh</span><strong class="feed-val" id="lastRefresh">—</strong></div>
         <div class="feed-row"><span class="feed-label">Macro source</span><strong class="feed-val">World Bank</strong></div>
-        <div class="feed-row"><span class="feed-label">FX source</span><strong class="feed-val">Frankfurter</strong></div>
+        <div class="feed-row"><span class="feed-label">FX source</span><strong class="feed-val">Open ER API</strong></div>
         <div class="feed-row"><span class="feed-label">Mode</span><strong class="feed-val" id="modeText">Dark</strong></div>
       </div>
     </div>
   </section>
 
-  <!-- KPI -->
   <div class="kpi-grid">
     <div class="kpi card reveal" style="--kpi-accent:var(--danger)">
       <div class="kpi-icon">📈</div>
@@ -359,9 +999,14 @@ canvas{width:100%!important;height:100%!important}
       <div class="kpi-val col-blue" id="kpiUnem">—</div>
       <div class="kpi-sub" id="subUnem">Fetching…</div>
     </div>
+    <div class="kpi card reveal" style="--kpi-accent:var(--muted)">
+      <div class="kpi-icon">🌍</div>
+      <div class="kpi-label">Population</div>
+      <div class="kpi-val" id="kpiPop">—</div>
+      <div class="kpi-sub" id="subPop">Fetching…</div>
+    </div>
   </div>
 
-  <!-- MACRO CHARTS -->
   <section class="section card reveal" id="macro">
     <div class="sec-head">
       <div>
@@ -369,6 +1014,7 @@ canvas{width:100%!important;height:100%!important}
       </div>
       <p class="sec-desc">World Bank indicators rendered as clean time series. Range buttons let you switch between recent years and full history.</p>
     </div>
+
     <div class="controls">
       <div class="btn-group" id="macroRanges">
         <button class="range-btn active" data-range="5" type="button">5Y</button>
@@ -377,6 +1023,7 @@ canvas{width:100%!important;height:100%!important}
       </div>
       <div class="ctrl-meta" id="macroMeta">Showing last 5 annual points per indicator</div>
     </div>
+
     <div class="chart-2">
       <div class="chart-box card">
         <div class="chart-top"><div><div class="chart-name">Inflation Rate</div><div class="chart-src">% annual CPI · World Bank</div></div><span class="badge">CPI</span></div>
@@ -389,9 +1036,10 @@ canvas{width:100%!important;height:100%!important}
         <div class="insight" id="insightGdp"></div>
       </div>
     </div>
+
     <div class="chart-2">
       <div class="chart-box card">
-        <div class="chart-top"><div><div class="chart-name">Unemployment Rate</div><div class="chart-src">% of labour force · ILO / World Bank</div></div><span class="badge">ILO</span></div>
+        <div class="chart-top"><div><div class="chart-name">Unemployment Rate</div><div class="chart-src">% of labour force · World Bank / ILO</div></div><span class="badge">ILO</span></div>
         <div class="canvas-wrap"><canvas id="chartUnem"></canvas></div>
         <div class="insight" id="insightUnem"></div>
       </div>
@@ -405,12 +1053,12 @@ canvas{width:100%!important;height:100%!important}
     </div>
   </section>
 
-  <!-- FX SECTION -->
   <section class="section card reveal" id="fx">
     <div class="sec-head">
       <div><div class="sec-title">Live USD / NGN</div></div>
-      <p class="sec-desc">Frankfurter daily reference rates. Range buttons switch between 30 days, 90 days, and 1 year.</p>
+      <p class="sec-desc">Live spot rate plus a history of the values captured by this page. Buttons switch the time window.</p>
     </div>
+
     <div class="fx-grid">
       <div class="rate-box card">
         <div class="kpi-label">Current reference rate</div>
@@ -421,29 +1069,34 @@ canvas{width:100%!important;height:100%!important}
           <span class="rate-pill">Higher = weaker naira</span>
           <span class="rate-pill">Auto-refresh ON</span>
         </div>
+        <div class="fx-gauge"><div class="fx-gauge-fill" id="fxGaugeFill" style="width:50%"></div></div>
       </div>
+
       <div class="rate-box card">
-        <div class="kpi-label">FX data sources</div>
-        <div class="btn-group">
-          <span class="range-btn active">Live spot</span>
-          <span class="range-btn active">Annual history</span>
+        <div class="kpi-label">Historical range</div>
+        <div class="btn-group" id="fxRanges">
+          <button class="range-btn" data-fxrange="5" type="button">5Y</button>
+          <button class="range-btn active" data-fxrange="10" type="button">10Y</button>
+          <button class="range-btn" data-fxrange="25" type="button">25Y</button>
+          <button class="range-btn" data-fxrange="all" type="button">All</button>
         </div>
-        <div class="ctrl-meta" id="fxRangeMeta">Live rate: open.er-api.com · History: World Bank annual series.</div>
+        <div class="ctrl-meta" id="fxRangeMeta">Annual average exchange rate · World Bank open data.</div>
       </div>
     </div>
+
     <div class="chart-box card">
-      <div class="chart-top"><div><div class="chart-name">USD / NGN Trend</div><div class="chart-src">daily reference rates · Frankfurter</div></div><span class="badge">FX</span></div>
-      <div class="canvas-wrap"><canvas id="chartFx"></canvas></div>
+      <div class="chart-top"><div><div class="chart-name">USD / NGN Historical Trend</div><div class="chart-src">annual avg · World Bank (PA.NUS.FCRF)</div></div><span class="badge">History</span></div>
+      <div class="canvas-wrap tall"><canvas id="chartFx"></canvas></div>
       <div class="insight" id="insightFx"></div>
     </div>
   </section>
 
-  <!-- NBS JOBS -->
   <section class="section card reveal" id="employment">
     <div class="sec-head">
       <div><div class="sec-title">NBS Job Creation & Separation 2024</div></div>
       <p class="sec-desc">Primary research from the NBS Business Establishment Survey. B.Sc. Statistics FYP, University of Abuja.</p>
     </div>
+
     <div class="fyp-header">
       <div class="fyp-badge">Primary Research</div>
       <div class="fyp-text">
@@ -452,6 +1105,7 @@ canvas{width:100%!important;height:100%!important}
         Dataset covers 8 occupational categories across Q1–Q3 2024. Methods: descriptive statistics, Chi-Square Test of Homogeneity, quarterly trend analysis.
       </div>
     </div>
+
     <div class="q-tabs" id="qTabs">
       <div class="q-tab active" onclick="setQuarter(1,this)">
         <div class="q-num">4,323</div><div class="q-lbl">Q1 2024</div><div class="q-sub">Jobs created</div>
@@ -466,6 +1120,7 @@ canvas{width:100%!important;height:100%!important}
         <div class="q-num" style="color:var(--danger)">2,184</div><div class="q-lbl">Jan–Sep 2024</div><div class="q-sub">Total separated</div>
       </div>
     </div>
+
     <div class="chart-3">
       <div class="chart-box card">
         <div class="chart-top"><div><div class="chart-name" id="jcsTitle">Jobs Created vs Separated · Q1 2024</div><div class="chart-src">by occupational category · NBS 2024</div></div><span class="badge">Survey</span></div>
@@ -478,13 +1133,16 @@ canvas{width:100%!important;height:100%!important}
         <div class="insight" id="insightTrend"></div>
       </div>
     </div>
+
     <div class="chart-box card">
       <div class="chart-top"><div><div class="chart-name">Reasons for Job Separation</div><div class="chart-src">NBS survey 2024 · n = 2,185</div></div><span class="badge">Table</span></div>
-      <table class="data-tbl"><thead><tr><th>Reason</th><th>Count</th><th>Share</th><th style="width:200px">Distribution</th></tr></thead><tbody id="reasonsBody"></tbody></table>
+      <table class="data-tbl">
+        <thead><tr><th>Reason</th><th>Count</th><th>Share</th><th style="width:200px">Distribution</th></tr></thead>
+        <tbody id="reasonsBody"></tbody>
+      </table>
     </div>
   </section>
 
-  <!-- METHODOLOGY -->
   <section class="section card reveal" id="methodology">
     <div class="sec-head"><div><div class="sec-title">Methodology & Sources</div></div></div>
     <div class="method-grid">
@@ -501,12 +1159,11 @@ canvas{width:100%!important;height:100%!important}
       <div class="method-card card">
         <div class="method-icon">🌐</div>
         <div class="method-name">Live Public APIs</div>
-        <div class="method-body">Macro data from the World Bank Open Data API. Daily FX rates from Frankfurter (free, no key required). Both refresh automatically every 15 minutes while the tab is visible.</div>
+        <div class="method-body">Macro data from the World Bank Open Data API via a browser-safe proxy. Live FX rates from Open ER API. Both refresh automatically every 15 minutes while the tab is visible.</div>
       </div>
     </div>
   </section>
 
-  <!-- FOOTER -->
   <footer class="footer card reveal">
     <div class="footer-grid">
       <div>
@@ -518,7 +1175,7 @@ canvas{width:100%!important;height:100%!important}
         <h4>Data Sources</h4>
         <div class="footer-links">
           <a href="https://data.worldbank.org/country/nigeria" target="_blank" rel="noopener">World Bank Open Data</a>
-          <a href="https://api.frankfurter.dev" target="_blank" rel="noopener">Frankfurter FX API</a>
+          <a href="https://open.er-api.com" target="_blank" rel="noopener">Open ER API</a>
           <a href="https://nigerianstat.gov.ng" target="_blank" rel="noopener">National Bureau of Statistics</a>
           <a href="https://www.cbn.gov.ng" target="_blank" rel="noopener">Central Bank of Nigeria</a>
         </div>
@@ -541,63 +1198,154 @@ canvas{width:100%!important;height:100%!important}
 </div>
 
 <script>
-/* ═══════════════════════════════════════
-   PARTICLE TRAIL CURSOR
-═══════════════════════════════════════ */
-const pCanvas = document.getElementById('particleCanvas');
-const pCtx    = pCanvas.getContext('2d');
-let pW = pCanvas.width  = window.innerWidth;
-let pH = pCanvas.height = window.innerHeight;
-window.addEventListener('resize', () => {
-  pW = pCanvas.width  = window.innerWidth;
-  pH = pCanvas.height = window.innerHeight;
+/* =========================
+   CANVASES
+========================= */
+const bgCanvas = document.getElementById('bgCanvas');
+const bgCtx = bgCanvas.getContext('2d');
+const particleCanvas = document.getElementById('particleCanvas');
+const pCtx = particleCanvas.getContext('2d');
+
+let dpr = Math.max(1, window.devicePixelRatio || 1);
+
+function resizeCanvas(canvas, ctx){
+  canvas.width = Math.floor(window.innerWidth * dpr);
+  canvas.height = Math.floor(window.innerHeight * dpr);
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+function resizeAll(){
+  dpr = Math.max(1, window.devicePixelRatio || 1);
+  resizeCanvas(bgCanvas, bgCtx);
+  resizeCanvas(particleCanvas, pCtx);
+}
+resizeAll();
+window.addEventListener('resize', resizeAll);
+
+/* =========================
+   BACKGROUND MOTION
+========================= */
+const bgNodes = Array.from({ length: 26 }, (_, i) => ({
+  x: Math.random() * window.innerWidth,
+  y: Math.random() * window.innerHeight,
+  vx: (Math.random() - 0.5) * 0.18,
+  vy: (Math.random() - 0.5) * 0.18,
+  r: Math.random() * 2.6 + 1.2,
+  hue: i % 4 === 0 ? 150 : i % 4 === 1 ? 45 : i % 4 === 2 ? 195 : 170
+}));
+
+let mouseX = -999, mouseY = -999;
+document.addEventListener('mousemove', e => {
+  mouseX = e.clientX;
+  mouseY = e.clientY;
 });
 
-const particles = [];
-let mx = -999, my = -999, lastMx = -999, lastMy = -999;
+function drawBackground(){
+  bgCtx.clearRect(0,0,window.innerWidth,window.innerHeight);
 
-document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  const grad = bgCtx.createRadialGradient(
+    mouseX, mouseY, 20,
+    mouseX, mouseY, 420
+  );
+  grad.addColorStop(0, 'rgba(0,212,106,0.08)');
+  grad.addColorStop(0.35, 'rgba(56,189,248,0.05)');
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  bgCtx.fillStyle = grad;
+  bgCtx.fillRect(0,0,window.innerWidth,window.innerHeight);
+
+  for (const n of bgNodes){
+    n.x += n.vx;
+    n.y += n.vy;
+
+    if (n.x < -20) n.x = window.innerWidth + 20;
+    if (n.x > window.innerWidth + 20) n.x = -20;
+    if (n.y < -20) n.y = window.innerHeight + 20;
+    if (n.y > window.innerHeight + 20) n.y = -20;
+
+    bgCtx.beginPath();
+    const nodeGrad = bgCtx.createRadialGradient(n.x, n.y, 0, n.x, n.y, 18);
+    nodeGrad.addColorStop(0, `hsla(${n.hue}, 90%, 65%, .55)`);
+    nodeGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    bgCtx.fillStyle = nodeGrad;
+    bgCtx.arc(n.x, n.y, n.r * 4, 0, Math.PI * 2);
+    bgCtx.fill();
+  }
+
+  for (let i = 0; i < bgNodes.length; i++){
+    for (let j = i + 1; j < bgNodes.length; j++){
+      const a = bgNodes[i], b = bgNodes[j];
+      const dx = a.x - b.x;
+      const dy = a.y - b.y;
+      const dist = Math.hypot(dx, dy);
+      if (dist < 150){
+        bgCtx.strokeStyle = `rgba(0,212,106,${0.08 * (1 - dist / 150)})`;
+        bgCtx.lineWidth = 1;
+        bgCtx.beginPath();
+        bgCtx.moveTo(a.x, a.y);
+        bgCtx.lineTo(b.x, b.y);
+        bgCtx.stroke();
+      }
+    }
+  }
+
+  requestAnimationFrame(drawBackground);
+}
+drawBackground();
+
+/* =========================
+   PARTICLE TRAIL CURSOR
+========================= */
+const particles = [];
+let px = -999, py = -999, lx = -999, ly = -999;
 
 function spawnParticle(x, y){
-  const angle  = Math.random() * Math.PI * 2;
-  const speed  = Math.random() * 1.2 + 0.3;
-  const size   = Math.random() * 4 + 1.5;
-  const colors = ['#00D46A','#00FF7F','#008751','#A8FFD0','#F5C518'];
+  const angle = Math.random() * Math.PI * 2;
+  const speed = Math.random() * 1.1 + 0.2;
+  const size = Math.random() * 4 + 1.4;
+  const colors = ['#00D46A', '#00FF7F', '#008751', '#A8FFD0', '#F5C518', '#38BDF8'];
   particles.push({
     x, y,
     vx: Math.cos(angle) * speed * 0.6,
-    vy: Math.sin(angle) * speed * 0.6 - 0.4,
+    vy: Math.sin(angle) * speed * 0.6 - 0.3,
     life: 1,
-    decay: Math.random() * 0.025 + 0.018,
+    decay: Math.random() * 0.024 + 0.016,
     size,
-    color: colors[Math.floor(Math.random() * colors.length)],
+    color: colors[Math.floor(Math.random() * colors.length)]
   });
 }
+document.addEventListener('mousemove', e => {
+  px = e.clientX;
+  py = e.clientY;
+});
 
 function animateParticles(){
-  pCtx.clearRect(0, 0, pW, pH);
+  pCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
-  // spawn on movement
-  const moved = Math.hypot(mx - lastMx, my - lastMy);
+  const moved = Math.hypot(px - lx, py - ly);
   if (moved > 2) {
-    const count = Math.min(Math.floor(moved * 0.4), 5);
+    const count = Math.min(Math.floor(moved * 0.45), 6);
     for (let i = 0; i < count; i++) {
       spawnParticle(
-        lastMx + (mx - lastMx) * (i / count),
-        lastMy + (my - lastMy) * (i / count)
+        lx + (px - lx) * (i / count),
+        ly + (py - ly) * (i / count)
       );
     }
-    lastMx = mx; lastMy = my;
+    lx = px;
+    ly = py;
   }
 
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
-    p.x  += p.vx;
-    p.y  += p.vy;
-    p.vy += 0.03; // gravity
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.028;
     p.life -= p.decay;
-    if (p.life <= 0) { particles.splice(i, 1); continue; }
-    pCtx.globalAlpha = p.life * p.life;
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+      continue;
+    }
+    pCtx.globalAlpha = Math.max(0, p.life * p.life);
     pCtx.beginPath();
     pCtx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
     pCtx.fillStyle = p.color;
@@ -608,21 +1356,34 @@ function animateParticles(){
 }
 animateParticles();
 
-/* ═══════════════════════════════════════
+/* =========================
    STATE
-═══════════════════════════════════════ */
+========================= */
+const STORE_KEY = 'naijametrics_state_v7';
+const AUTO_REFRESH_MS = 15 * 60 * 1000;
+const MAX_FX_POINTS = 800;
+
+const FALLBACK = {
+  inf: [{ date: '2024', value: 33.2 }],
+  gdp: [{ date: '2024', value: 4.1 }],
+  unem: [{ date: '2024', value: 3.1 }],
+  fx: [{ t: Date.now(), v: 1500 }],
+  pop: [{ date: '2023', value: 220e6 }]
+};
+
 const S = {
   theme: localStorage.getItem('nm-theme') || (matchMedia('(prefers-color-scheme:light)').matches ? 'light' : 'dark'),
   macroRange: 5,
-  fxRange: 30,
+  fxRange: '10',
   quarter: 1,
-  data: { inf:[], gdp:[], unem:[], fx:[] },
+  data: { inf: [], gdp: [], unem: [], fx: [], pop: [] },
+  liveFx: [],
   charts: {}
 };
 
-/* ═══════════════════════════════════════
+/* =========================
    THEME
-═══════════════════════════════════════ */
+========================= */
 function setTheme(t){
   S.theme = t;
   document.documentElement.dataset.theme = t;
@@ -631,179 +1392,315 @@ function setTheme(t){
   document.getElementById('modeText').textContent = t === 'light' ? 'Light' : 'Dark';
 }
 
-/* ═══════════════════════════════════════
+/* =========================
    HELPERS
-═══════════════════════════════════════ */
-function fmtDate(d){
-  const p = n => String(n).padStart(2,'0');
-  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;
+========================= */
+function latest(arr){ return arr?.length ? arr[arr.length - 1] : null; }
+function prev(arr){ return arr?.length > 1 ? arr[arr.length - 2] : null; }
+function chgVal(arr){
+  const a = latest(arr), b = prev(arr);
+  return (a && b && isFinite(a.value) && isFinite(b.value)) ? a.value - b.value : null;
 }
-function n1(v){ return (typeof v === 'number' && isFinite(v)) ? v.toFixed(1) : '—'; }
-function latest(arr){ return arr?.length ? arr[arr.length-1] : null; }
-function chgVal(arr){ const a=latest(arr),b=arr?.[arr.length-2]; return(a&&b)?a.value-b.value:null; }
-function pctChg(arr){ const a=latest(arr),b=arr?.[arr.length-2]; return(a&&b&&b.value!==0)?((a.value-b.value)/b.value)*100:null; }
-function slice(arr,r){ if(!Array.isArray(arr))return[]; return r==='all'?arr.slice():arr.slice(-Number(r)); }
-function setStatus(t){ document.getElementById('statusLine').textContent=t; document.getElementById('liveLabel').textContent=t.includes('Refresh')?'Refreshing…':'Live sync'; }
-function setRefreshTime(){ document.getElementById('lastRefresh').textContent = new Date().toLocaleTimeString(); }
-function setGroup(pid,btn){ document.querySelectorAll(`#${pid} .range-btn`).forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
-
-function deltaSpan(v, suffix='%', positiveGood=true){
-  if(v===null||!isFinite(v)) return '';
-  const good = positiveGood ? v>0 : v<0;
-  const cls  = good ? 'down' : 'up';
-  const icon = v>0 ? '▲' : '▼';
+function slice(arr, r){
+  if (!Array.isArray(arr)) return [];
+  return r === 'all' ? arr.slice() : arr.slice(-Number(r));
+}
+function setStatus(t){
+  document.getElementById('statusLine').textContent = t;
+  document.getElementById('liveLabel').textContent = t.includes('Refresh') ? 'Refreshing…' : 'Live sync';
+}
+function setRefreshTime(){
+  document.getElementById('lastRefresh').textContent = new Date().toLocaleString();
+}
+function setGroup(pid, btn){
+  document.querySelectorAll(`#${pid} .range-btn`).forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function cssVar(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function animCount(el, target, suffix = '', dec = 1, dur = 1300){
+  const t0 = performance.now();
+  (function step(now){
+    const p = Math.min((now - t0) / dur, 1);
+    const ease = 1 - Math.pow(1 - p, 3);
+    const val = ease * target;
+    el.textContent = (dec === 0 ? Math.round(val) : val.toFixed(dec)) + suffix;
+    if (p < 1) requestAnimationFrame(step);
+  })(performance.now());
+}
+function deltaSpan(v, suffix = '%', positiveGood = true){
+  if (v === null || !isFinite(v)) return '<span class="delta flat">No prior reading</span>';
+  if (v === 0) return '<span class="delta flat">● 0.0' + suffix + '</span>';
+  const good = positiveGood ? v > 0 : v < 0;
+  const cls = good ? 'down' : 'up';
+  const icon = v > 0 ? '▲' : '▼';
   return `<span class="delta ${cls}">${icon} ${Math.abs(v).toFixed(1)}${suffix}</span>`;
 }
+function fmtFxTime(ts){
+  return new Intl.DateTimeFormat(undefined, {
+    month:'short',
+    day:'2-digit',
+    hour:'2-digit',
+    minute:'2-digit'
+  }).format(new Date(ts));
+}
+function saveState(){
+  localStorage.setItem(STORE_KEY, JSON.stringify({
+    data: S.data,
+    liveFx: S.liveFx
+  }));
+}
+function fxHistorySeries(range){
+  const arr = S.data.fx;
+  if (!arr || !arr.length) return [];
+  return range === 'all' ? arr.slice() : arr.slice(-Number(range));
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (parsed?.data) S.data = { inf:[], gdp:[], unem:[], fx:[], pop:[], ...parsed.data };
+    if (Array.isArray(parsed?.liveFx)) S.liveFx = parsed.liveFx;
+  }catch{}
+}
+function appendFxPoint(value){
+  if (!isFinite(value)) return;
+  const t = Date.now();
+  S.liveFx.push({ t, v: Number(value) });
+  if (S.liveFx.length > MAX_FX_POINTS) S.liveFx = S.liveFx.slice(-MAX_FX_POINTS);
+  saveState();
+}
+function updateSummaryLine(){
+  const inf = latest(S.data.inf);
+  const gdp = latest(S.data.gdp);
+  const unem = latest(S.data.unem);
+  const fx = latest(S.liveFx);
+  const parts = [];
+  if (inf) parts.push(`Inflation ${inf.value.toFixed(1)}%`);
+  if (gdp) parts.push(`GDP ${gdp.value.toFixed(1)}%`);
+  if (fx) parts.push(`FX ₦${Math.round(fx.v).toLocaleString()}`);
+  if (unem) parts.push(`Unemployment ${unem.value.toFixed(1)}%`);
+  document.getElementById('statusLine').textContent = parts.length ? parts.join(' · ') : 'Loading live data…';
+}
+function ensureFallbacks(){
+  if (!S.data.inf.length) S.data.inf = FALLBACK.inf.slice();
+  if (!S.data.gdp.length) S.data.gdp = FALLBACK.gdp.slice();
+  if (!S.data.unem.length) S.data.unem = FALLBACK.unem.slice();
+  if (!S.liveFx.length) S.liveFx = FALLBACK.fx.slice();
+  if (!S.data.fx) S.data.fx = [];
+  if (!S.data.pop) S.data.pop = [];
+  if (!S.data.pop.length) S.data.pop = FALLBACK.pop.slice();
+}
+function showLoadingState(){
+  document.getElementById('kpiInf').textContent = '—';
+  document.getElementById('kpiGdp').textContent = '—';
+  document.getElementById('kpiFx').textContent = '—';
+  document.getElementById('kpiUnem').textContent = '—';
+  document.getElementById('kpiPop').textContent = '—';
+}
 
-function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
-
-/* ═══════════════════════════════════════
+/* =========================
    CHART FACTORY
-═══════════════════════════════════════ */
-function destroyChart(k){ if(S.charts[k]){S.charts[k].destroy();S.charts[k]=null;} }
-
+========================= */
+function destroyChart(k){
+  if (S.charts[k]){
+    S.charts[k].destroy();
+    S.charts[k] = null;
+  }
+}
 function lineChart(key, id, labels, values, color, fmt){
   const el = document.getElementById(id);
-  if(!el) return;
+  if (!el) return;
   destroyChart(key);
   S.charts[key] = new Chart(el, {
     type:'line',
-    data:{ labels, datasets:[{
-      data:values, borderColor:color, backgroundColor:color+'18',
-      borderWidth:2, pointRadius:2.5, pointHoverRadius:5.5,
-      pointBackgroundColor:color, fill:true, tension:0.38
-    }]},
+    data:{
+      labels,
+      datasets:[{
+        data:values,
+        borderColor:color,
+        backgroundColor:color + '18',
+        borderWidth:2,
+        pointRadius:2.5,
+        pointHoverRadius:5.5,
+        pointBackgroundColor:color,
+        fill:true,
+        tension:0.38
+      }]
+    },
     options:{
-      responsive:true, maintainAspectRatio:false,
+      responsive:true,
+      maintainAspectRatio:false,
       interaction:{ mode:'index', intersect:false },
       plugins:{
         legend:{ display:false },
-        tooltip:{ backgroundColor:cssVar('--panel'), borderColor:cssVar('--border2'), borderWidth:1,
-          titleColor:cssVar('--text'), bodyColor:cssVar('--muted'), padding:10,
-          callbacks:{ label: ctx => fmt ? fmt(ctx.raw) : Number(ctx.raw).toFixed(1) }
+        tooltip:{
+          backgroundColor:cssVar('--panel'),
+          borderColor:cssVar('--border2'),
+          borderWidth:1,
+          titleColor:cssVar('--text'),
+          bodyColor:cssVar('--muted'),
+          padding:10,
+          callbacks:{
+            label: ctx => fmt ? fmt(ctx.raw) : Number(ctx.raw).toFixed(1)
+          }
         }
       },
       scales:{
-        x:{ grid:{ color:cssVar('--border') }, ticks:{ maxTicksLimit:8, maxRotation:0 } },
-        y:{ grid:{ color:cssVar('--border') }, ticks:{ callback: v => fmt ? fmt(v) : Number(v).toFixed(1) } }
+        x:{
+          grid:{ color:cssVar('--border') },
+          ticks:{ maxTicksLimit:8, maxRotation:0 }
+        },
+        y:{
+          grid:{ color:cssVar('--border') },
+          ticks:{ callback: v => fmt ? fmt(v) : Number(v).toFixed(1) }
+        }
       }
     }
   });
 }
 
-/* ═══════════════════════════════════════
-   TICKER
-═══════════════════════════════════════ */
-(function buildTicker(){
-  const items = ['INFLATION RATE','GDP GROWTH','NBS JOB SURVEY 2024','USD/NGN LIVE FX',
-    'UNEMPLOYMENT','JOB CREATION 8,221','SEPARATION 2,184','CHI-SQUARE TEST',
-    'WORLD BANK API','FRANKFURTER FX','QUARTERLY TREND','OPEN SOURCE · MIT','ABUJA NIGERIA'];
+/* =========================
+   TICKER (dynamic)
+========================= */
+function updateTicker(){
+  const inf = latest(S.data.inf);
+  const gdp = latest(S.data.gdp);
+  const unem = latest(S.data.unem);
+  const fx = latest(S.liveFx);
+  const pop = latest(S.data.pop);
+  const items = [
+    inf  ? `INFLATION ${inf.value.toFixed(1)}%` : 'INFLATION RATE',
+    gdp  ? `GDP GROWTH ${gdp.value.toFixed(1)}%` : 'GDP GROWTH',
+    'NBS JOB SURVEY 2024',
+    fx   ? `USD/NGN ₦${Math.round(fx.v).toLocaleString()}` : 'USD/NGN LIVE FX',
+    unem ? `UNEMPLOYMENT ${unem.value.toFixed(1)}%` : 'UNEMPLOYMENT',
+    pop  ? `POPULATION ${(pop.value/1e6).toFixed(1)}M` : 'POPULATION 220M+',
+    'JOB CREATION 8,221',
+    'SEPARATION 2,184',
+    'CHI-SQUARE TEST',
+    'WORLD BANK API',
+    'QUARTERLY TREND',
+    'OPEN SOURCE · MIT',
+    'ABUJA NIGERIA'
+  ];
   const inner = document.getElementById('tickerInner');
-  inner.innerHTML = [...items,...items,...items].map(s=>`<span>${s}</span>`).join('');
-})();
+  inner.innerHTML = [...items, ...items, ...items].map(s => `<span>${s}</span>`).join('');
+}
 
-/* ═══════════════════════════════════════
-   SCROLL REVEAL
-═══════════════════════════════════════ */
-const revealObs = new IntersectionObserver(es=>{
-  es.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('show'); });
+/* =========================
+   REVEAL
+========================= */
+const revealObs = new IntersectionObserver(es => {
+  es.forEach(e => {
+    if (e.isIntersecting) e.target.classList.add('show');
+  });
 }, { threshold:0.07 });
-document.querySelectorAll('.reveal').forEach(el=>revealObs.observe(el));
+document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
 
-/* ═══════════════════════════════════════
-   ANIMATED COUNTER
-═══════════════════════════════════════ */
-function animCount(el, target, suffix='', dec=1, dur=1300){
-  const t0 = performance.now();
-  (function step(now){
-    const p    = Math.min((now-t0)/dur, 1);
-    const ease = 1 - Math.pow(1-p, 3);
-    const val  = ease * target;
-    el.textContent = (dec===0 ? Math.round(val) : val.toFixed(dec)) + suffix;
-    if(p<1) requestAnimationFrame(step);
-  })(performance.now());
+/* =========================
+   FETCHING
+========================= */
+async function fetchJsonCandidates(urls){
+  for (const url of urls){
+    try{
+      const r = await fetch(url, { cache:'no-store' });
+      if (!r.ok) continue;
+      const text = await r.text();
+      try { return JSON.parse(text); } catch { continue; }
+    }catch{}
+  }
+  return null;
 }
 
-/* ═══════════════════════════════════════
-   DATA FETCHING
-═══════════════════════════════════════ */
+function proxyUrls(raw){
+  const enc = encodeURIComponent(raw);
+  return [
+    raw,
+    `https://api.allorigins.win/raw?url=${enc}`,
+    `https://corsproxy.io/?${enc}`,
+    `https://api.codetabs.com/v1/proxy?quest=${enc}`
+  ];
+}
+
 async function fetchWB(indicator){
-  try{
-    const r = await fetch(`https://api.worldbank.org/v2/country/NG/indicator/${indicator}?format=json&mrv=60&per_page=60`);
-    const d = await r.json();
-    return ((d[1]||[])
-      .filter(row=>row&&row.value!==null)
-      .map(row=>({date:String(row.date),value:Number(row.value)}))
-      .filter(row=>isFinite(row.value))
-      .sort((a,b)=>Number(a.date)-Number(b.date)));
-  }catch{ return []; }
+  const url = `https://api.worldbank.org/v2/country/NG/indicator/${indicator}?format=json&mrv=60&per_page=60`;
+  const d = await fetchJsonCandidates(proxyUrls(url));
+  if (!d || !Array.isArray(d[1])) return [];
+  return d[1]
+    .filter(row => row && row.value !== null)
+    .map(row => ({ date: String(row.date), value: Number(row.value) }))
+    .filter(row => isFinite(row.value))
+    .sort((a, b) => Number(a.date) - Number(b.date));
 }
 
-// Frankfurter does NOT support NGN (ECB currencies only).
-// We use: open.er-api.com for the live rate + World Bank PA.NUS.FCRF for annual history.
 async function fetchFxCurrent(){
-  try{
-    const r = await fetch('https://open.er-api.com/v6/latest/USD');
-    const d = await r.json();
-    if(d && d.rates && d.rates.NGN) return { rate: d.rates.NGN, date: d.time_last_update_utc };
-    return null;
-  }catch{ return null; }
+  const url = 'https://open.er-api.com/v6/latest/USD';
+  const d = await fetchJsonCandidates(proxyUrls(url));
+  if (d && d.result === 'success' && d.rates && d.rates.NGN) {
+    return {
+      rate: Number(d.rates.NGN),
+      date: d.time_last_update_utc || ''
+    };
+  }
+  return null;
 }
 
-async function fetchFx(){
-  // historical annual data from World Bank
-  try{
-    const r = await fetch('https://api.worldbank.org/v2/country/NG/indicator/PA.NUS.FCRF?format=json&mrv=30&per_page=30');
-    const d = await r.json();
-    return ((d[1]||[])
-      .filter(row=>row&&row.value!==null)
-      .map(row=>({date:String(row.date), value:Number(row.value)}))
-      .filter(row=>isFinite(row.value))
-      .sort((a,b)=>Number(a.date)-Number(b.date)));
-  }catch{ return []; }
-}
-
-/* ═══════════════════════════════════════
+/* =========================
    RENDER MACRO
-═══════════════════════════════════════ */
+========================= */
 function renderMacro(){
-  const inf  = slice(S.data.inf,  S.macroRange);
-  const gdp  = slice(S.data.gdp,  S.macroRange);
+  const inf = slice(S.data.inf, S.macroRange);
+  const gdp = slice(S.data.gdp, S.macroRange);
   const unem = slice(S.data.unem, S.macroRange);
 
   document.getElementById('macroMeta').textContent =
-    S.macroRange==='all'
+    S.macroRange === 'all'
       ? 'Showing all available annual data points.'
       : `Showing last ${S.macroRange} annual points per indicator`;
 
-  if(inf.length){
-    const cur=latest(inf), chg=chgVal(inf);
+  if (inf.length){
+    const cur = latest(inf);
+    const chg = chgVal(inf);
     animCount(document.getElementById('kpiInf'), cur.value, '%', 1);
-    document.getElementById('subInf').innerHTML = `${cur.date} ${deltaSpan(chg,'%',false)}`;
+    document.getElementById('subInf').innerHTML = `${cur.date} ${deltaSpan(chg, '%', false)}`;
     document.getElementById('insightInf').innerHTML =
-      `<strong>Inflation context:</strong> latest annual CPI is ${n1(cur.value)}%, a ${Math.abs(cur.value-inf[0].value).toFixed(1)} point movement from the start of the selected range.`;
-    lineChart('inf','chartInf',inf.map(d=>d.date),inf.map(d=>d.value),'#FF5468',v=>`${Number(v).toFixed(1)}%`);
+      `<strong>Inflation context:</strong> latest annual CPI is ${cur.value.toFixed(1)}%, a ${Math.abs(cur.value - inf[0].value).toFixed(1)} point movement from the start of the selected range.`;
+    lineChart('inf', 'chartInf', inf.map(d => d.date), inf.map(d => d.value), '#FF5468', v => `${Number(v).toFixed(1)}%`);
+  } else {
+    document.getElementById('kpiInf').textContent = '—';
+    document.getElementById('subInf').textContent = 'No reading';
   }
 
-  if(gdp.length){
-    const cur=latest(gdp), chg=chgVal(gdp);
+  if (gdp.length){
+    const cur = latest(gdp);
+    const chg = chgVal(gdp);
     animCount(document.getElementById('kpiGdp'), cur.value, '%', 1);
-    document.getElementById('subGdp').innerHTML = `${cur.date} ${deltaSpan(chg,'%',true)}`;
+    document.getElementById('subGdp').innerHTML = `${cur.date} ${deltaSpan(chg, '%', true)}`;
     document.getElementById('insightGdp').innerHTML =
-      `<strong>Growth context:</strong> GDP growth is ${n1(cur.value)}%, with a ${Math.abs(cur.value-gdp[0].value).toFixed(1)} point shift across the selected window.`;
-    lineChart('gdp','chartGdp',gdp.map(d=>d.date),gdp.map(d=>d.value),'#00D46A',v=>`${Number(v).toFixed(1)}%`);
+      `<strong>Growth context:</strong> GDP growth is ${cur.value.toFixed(1)}%, with a ${Math.abs(cur.value - gdp[0].value).toFixed(1)} point shift across the selected window.`;
+    lineChart('gdp', 'chartGdp', gdp.map(d => d.date), gdp.map(d => d.value), '#00D46A', v => `${Number(v).toFixed(1)}%`);
+  } else {
+    document.getElementById('kpiGdp').textContent = '—';
+    document.getElementById('subGdp').textContent = 'No reading';
   }
 
-  if(unem.length){
-    const cur=latest(unem), chg=chgVal(unem);
+  if (unem.length){
+    const cur = latest(unem);
+    const chg = chgVal(unem);
     animCount(document.getElementById('kpiUnem'), cur.value, '%', 1);
-    document.getElementById('subUnem').innerHTML = `${cur.date} ${deltaSpan(chg,'%',false)}`;
+    document.getElementById('subUnem').innerHTML = `${cur.date} ${deltaSpan(chg, '%', false)}`;
     document.getElementById('insightUnem').innerHTML =
-      `<strong>Labour context:</strong> unemployment is ${n1(cur.value)}% of the labour force, ${Math.abs(cur.value-unem[0].value).toFixed(1)} points from the start of the range.`;
-    lineChart('unem','chartUnem',unem.map(d=>d.date),unem.map(d=>d.value),'#38BDF8',v=>`${Number(v).toFixed(1)}%`);
+      `<strong>Labour context:</strong> unemployment is ${cur.value.toFixed(1)}% of the labour force, ${Math.abs(cur.value - unem[0].value).toFixed(1)} points from the start of the range.`;
+    lineChart('unem', 'chartUnem', unem.map(d => d.date), unem.map(d => d.value), '#38BDF8', v => `${Number(v).toFixed(1)}%`);
+  } else {
+    document.getElementById('kpiUnem').textContent = '—';
+    document.getElementById('subUnem').textContent = 'No reading';
   }
 
-  if(inf.length&&gdp.length&&unem.length){
+  if (inf.length && gdp.length && unem.length){
     const pulse = ((gdp.at(-1).value - unem.at(-1).value) + (10 - inf.at(-1).value)).toFixed(1);
     document.getElementById('macroPulse').textContent = pulse;
     document.getElementById('macroPulseText').textContent =
@@ -811,148 +1708,347 @@ function renderMacro(){
   }
 }
 
-/* ═══════════════════════════════════════
-   RENDER FX
-═══════════════════════════════════════ */
-async function renderFx(){
-  // Live current rate
-  const live = await fetchFxCurrent();
-  const fx   = S.data.fx; // annual WB history
-
-  if(live){
-    animCount(document.getElementById('kpiFx'), live.rate, '', 0);
-    document.getElementById('fxBig').textContent = `₦${Math.round(live.rate).toLocaleString()}`;
-    document.getElementById('fxMeta').textContent = `Live rate · ${live.date.slice(0,16)} UTC`;
-    document.getElementById('fxChange').textContent = 'Live · open.er-api.com';
-    document.getElementById('subFx').innerHTML = `Live · open.er-api.com`;
-  }
-
-  if(fx.length){
-    const cur=latest(fx), prev=fx[fx.length-2];
-    const chg = prev ? cur.value - prev.value : null;
-    document.getElementById('fxRangeMeta').textContent = `Showing ${fx.length} annual reference points (World Bank). Live spot rate above from open.er-api.`;
-    document.getElementById('insightFx').innerHTML =
-      `<strong>FX view:</strong> annual official rate reached ₦${Math.round(cur.value).toLocaleString()} in ${cur.date}${chg!==null?`, up ₦${Math.abs(chg).toFixed(0)} from the prior year`:''}.`;
-    lineChart('fx','chartFx',fx.map(d=>d.date),fx.map(d=>d.value),'#F5C518',v=>`₦${Math.round(v).toLocaleString()}`);
-  }
+/* =========================
+   RENDER POPULATION
+========================= */
+function renderPop(){
+  const pop = latest(S.data.pop);
+  if (!pop) return;
+  const millions = pop.value / 1e6;
+  const el = document.getElementById('kpiPop');
+  if (el) animCount(el, millions, 'M', 1);
+  const sub = document.getElementById('subPop');
+  if (sub) sub.textContent = `${pop.date} estimate · World Bank`;
 }
 
-/* ═══════════════════════════════════════
+/* =========================
+   RENDER FX
+========================= */
+function renderFxFromState(){
+  // ── Live KPI card (Open ER API spot rate) ──────────────────────────────
+  const livePoint = S.liveFx.length ? S.liveFx.at(-1) : null;
+  const livePrev  = S.liveFx.length > 1 ? S.liveFx.at(-2) : null;
+
+  if (livePoint){
+    animCount(document.getElementById('kpiFx'), livePoint.v, '', 0);
+    document.getElementById('fxBig').textContent  = `₦${Math.round(livePoint.v).toLocaleString()}`;
+    document.getElementById('fxMeta').textContent = livePoint.t ? `Live rate · ${fmtFxTime(livePoint.t)}` : 'Live rate';
+    // subFx: compare live rate vs latest WB annual avg
+    const wbLatest = latest(S.data.fx);
+    const subFxEl = document.getElementById('subFx');
+    if (subFxEl){
+      if (wbLatest){
+        const diffPct = ((livePoint.v - wbLatest.value) / wbLatest.value) * 100;
+        subFxEl.innerHTML = `${fmtFxTime(livePoint.t)} ${deltaSpan(diffPct, '% vs ' + wbLatest.date + ' avg', false)}`;
+      } else {
+        subFxEl.textContent = fmtFxTime(livePoint.t);
+      }
+    }
+    if (livePrev && livePrev.v){
+      const d = livePoint.v - livePrev.v;
+      const p = (d / livePrev.v) * 100;
+      document.getElementById('fxChange').textContent = `${d >= 0 ? '▲' : '▼'} ${Math.abs(p).toFixed(2)}% since last capture`;
+    } else {
+      document.getElementById('fxChange').textContent = 'Live · open.er-api.com';
+    }
+  } else {
+    document.getElementById('fxBig').textContent  = '—';
+    document.getElementById('fxMeta').textContent = 'Fetching live rate…';
+    document.getElementById('fxChange').textContent = '—';
+    const subFxEl = document.getElementById('subFx');
+    if (subFxEl) subFxEl.textContent = 'Fetching…';
+  }
+
+  // ── Gauge (range = all-time historical extremes + live) ────────────────
+  const allVals = [
+    ...S.data.fx.map(p => p.value),
+    ...(livePoint ? [livePoint.v] : [])
+  ];
+  if (allVals.length > 1 && livePoint){
+    const mn = Math.min(...allVals), mx = Math.max(...allVals);
+    const gauge = ((livePoint.v - mn) / Math.max(1, mx - mn)) * 100;
+    document.getElementById('fxGaugeFill').style.width = `${Math.max(8, Math.min(100, gauge))}%`;
+  }
+
+  // ── Historical chart (World Bank annual series) ────────────────────────
+  const hist = fxHistorySeries(S.fxRange);
+
+  if (!hist.length){
+    document.getElementById('fxRangeMeta').textContent = 'Historical data loading… try refreshing.';
+    document.getElementById('insightFx').textContent   = 'Waiting for historical exchange rate data.';
+    return;
+  }
+
+  const first = hist[0].value;
+  const last  = hist.at(-1);
+  const changePct = first ? ((last.value - first) / first) * 100 : null;
+
+  const rangeLabel = S.fxRange === 'all' ? 'all available history' : `${S.fxRange} years`;
+  document.getElementById('fxRangeMeta').textContent =
+    `${hist.length} annual data points · ${hist[0].date}–${last.date} · World Bank (PA.NUS.FCRF)`;
+
+  document.getElementById('insightFx').innerHTML =
+    `<strong>FX trend:</strong> the naira traded at ₦${Math.round(first).toLocaleString()} per USD in ${hist[0].date} and has reached ₦${Math.round(last.value).toLocaleString()} by ${last.date}` +
+    (changePct !== null ? ` — a <strong>${changePct >= 0 ? '+' : ''}${changePct.toFixed(0)}%</strong> depreciation across ${rangeLabel}.` : '.');
+
+  lineChart(
+    'fx',
+    'chartFx',
+    hist.map(p => p.date),
+    hist.map(p => p.value),
+    '#F5C518',
+    v => `₦${Math.round(v).toLocaleString()}`
+  );
+}
+
+/* =========================
    RENDER FYP
-═══════════════════════════════════════ */
+========================= */
 const CATS  = ['W.Proprietors','Mgr/Prof/Tech','Clerical','Consultants','Apprentices','Operatives','Unpaid','Other'];
-const JC    = { 1:[820,750,420,180,610,980,380,183], 2:[390,356,200,85,290,465,181,83], 3:[350,320,180,77,261,419,163,78] };
+const JC    = {
+  1:[820,750,420,180,610,980,380,183],
+  2:[390,356,200,85,290,465,181,83],
+  3:[350,320,180,77,261,419,163,78]
+};
 const JS    = [380,320,280,95,310,480,220,99];
 const REASONS = [
-  {r:'Voluntary resignation',f:612},{r:'Business closure/downsizing',f:498},
-  {r:'Contract/seasonal end',f:387},{r:'Retirement',f:265},
-  {r:'Dismissal/termination',f:218},{r:'Business relocation',f:135},{r:'Other/unspecified',f:70},
+  {r:'Voluntary resignation',f:612},
+  {r:'Business closure/downsizing',f:498},
+  {r:'Contract/seasonal end',f:387},
+  {r:'Retirement',f:265},
+  {r:'Dismissal/termination',f:218},
+  {r:'Business relocation',f:135},
+  {r:'Other/unspecified',f:70},
 ];
 
 function renderQuarter(q){
   destroyChart('jcs');
-  S.charts.jcs = new Chart(document.getElementById('chartJcs'),{
+  S.charts.jcs = new Chart(document.getElementById('chartJcs'), {
     type:'bar',
-    data:{ labels:CATS, datasets:[
-      {label:`Created (Q${q})`, data:JC[q], backgroundColor:'rgba(0,212,106,0.18)', borderColor:'#00D46A', borderWidth:1.3, borderRadius:4},
-      {label:'Separated',       data:JS,    backgroundColor:'rgba(255,84,104,0.15)', borderColor:'#FF5468', borderWidth:1.3, borderRadius:4},
-    ]},
+    data:{
+      labels:CATS,
+      datasets:[
+        {
+          label:`Created (Q${q})`,
+          data:JC[q],
+          backgroundColor:'rgba(0,212,106,0.18)',
+          borderColor:'#00D46A',
+          borderWidth:1.3,
+          borderRadius:4
+        },
+        {
+          label:'Separated',
+          data:JS,
+          backgroundColor:'rgba(255,84,104,0.15)',
+          borderColor:'#FF5468',
+          borderWidth:1.3,
+          borderRadius:4
+        }
+      ]
+    },
     options:{
-      responsive:true, maintainAspectRatio:false,
+      responsive:true,
+      maintainAspectRatio:false,
       interaction:{ mode:'index', intersect:false },
-      plugins:{ legend:{ labels:{ boxWidth:10, color:cssVar('--muted') } }, tooltip:{ backgroundColor:cssVar('--panel'), borderColor:cssVar('--border2'), borderWidth:1, padding:10, titleColor:cssVar('--text'), bodyColor:cssVar('--muted') } },
-      scales:{ x:{ grid:{color:cssVar('--border')}, ticks:{font:{size:10}} }, y:{ grid:{color:cssVar('--border')} } }
+      plugins:{
+        legend:{ labels:{ boxWidth:10, color:cssVar('--muted') } },
+        tooltip:{
+          backgroundColor:cssVar('--panel'),
+          borderColor:cssVar('--border2'),
+          borderWidth:1,
+          padding:10,
+          titleColor:cssVar('--text'),
+          bodyColor:cssVar('--muted')
+        }
+      },
+      scales:{
+        x:{
+          grid:{ color:cssVar('--border') },
+          ticks:{ font:{ size:10 } }
+        },
+        y:{ grid:{ color:cssVar('--border') } }
+      }
     }
   });
-  const tc = JC[q].reduce((a,b)=>a+b,0);
-  const ts = JS.reduce((a,b)=>a+b,0);
+
+  const tc = JC[q].reduce((a,b) => a + b, 0);
+  const ts = JS.reduce((a,b) => a + b, 0);
   const net = tc - ts;
   document.getElementById('jcsTitle').textContent = `Jobs Created vs Separated · Q${q} 2024`;
   document.getElementById('insightJcs').innerHTML =
-    `<strong>Q${q} view:</strong> ${tc.toLocaleString()} jobs created against ${ts.toLocaleString()} separations — net <strong>${net>0?'+':''}${net.toLocaleString()}</strong>.`;
+    `<strong>Q${q} view:</strong> ${tc.toLocaleString()} jobs created against ${ts.toLocaleString()} separations — net <strong>${net > 0 ? '+' : ''}${net.toLocaleString()}</strong>.`;
 }
 
 function renderTrend(){
-  const totals = [1,2,3].map(q=>JC[q].reduce((a,b)=>a+b,0));
+  const totals = [1,2,3].map(q => JC[q].reduce((a,b) => a + b, 0));
   destroyChart('trend');
-  S.charts.trend = new Chart(document.getElementById('chartTrend'),{
+  S.charts.trend = new Chart(document.getElementById('chartTrend'), {
     type:'bar',
-    data:{ labels:['Q1 2024','Q2 2024','Q3 2024'], datasets:[{
-      label:'Jobs Created', data:totals,
-      backgroundColor:['rgba(0,212,106,0.72)','rgba(0,212,106,0.48)','rgba(0,212,106,0.28)'],
-      borderColor:'#00D46A', borderWidth:1.3, borderRadius:6
-    }]},
-    options:{ responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{display:false}, tooltip:{ backgroundColor:cssVar('--panel'), borderColor:cssVar('--border2'), borderWidth:1, padding:10, titleColor:cssVar('--text'), bodyColor:cssVar('--muted') } },
-      scales:{ x:{grid:{color:cssVar('--border')}}, y:{grid:{color:cssVar('--border')}, ticks:{callback:v=>Number(v).toLocaleString()}} }
+    data:{
+      labels:['Q1 2024','Q2 2024','Q3 2024'],
+      datasets:[{
+        label:'Jobs Created',
+        data:totals,
+        backgroundColor:['rgba(0,212,106,0.72)','rgba(0,212,106,0.48)','rgba(0,212,106,0.28)'],
+        borderColor:'#00D46A',
+        borderWidth:1.3,
+        borderRadius:6
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          backgroundColor:cssVar('--panel'),
+          borderColor:cssVar('--border2'),
+          borderWidth:1,
+          padding:10,
+          titleColor:cssVar('--text'),
+          bodyColor:cssVar('--muted')
+        }
+      },
+      scales:{
+        x:{ grid:{ color:cssVar('--border') } },
+        y:{
+          grid:{ color:cssVar('--border') },
+          ticks:{ callback:v => Number(v).toLocaleString() }
+        }
+      }
     }
   });
+
   document.getElementById('insightTrend').innerHTML =
-    `<strong>Trend insight:</strong> job creation fell from ${totals[0].toLocaleString()} in Q1 to ${totals[2].toLocaleString()} in Q3 — a ${Math.round((1-totals[2]/totals[0])*100)}% decline across the quarter sequence.`;
+    `<strong>Trend insight:</strong> job creation fell from ${totals[0].toLocaleString()} in Q1 to ${totals[2].toLocaleString()} in Q3 — a ${Math.round((1 - totals[2] / totals[0]) * 100)}% decline across the quarter sequence.`;
 }
 
 function renderReasons(){
-  const total = REASONS.reduce((a,b)=>a+b.f,0);
-  const max   = Math.max(...REASONS.map(r=>r.f));
-  document.getElementById('reasonsBody').innerHTML = REASONS.map(r=>{
-    const pct=(r.f/total*100).toFixed(1);
-    const w=Math.round(r.f/max*158);
+  const total = REASONS.reduce((a,b) => a + b.f, 0);
+  const max = Math.max(...REASONS.map(r => r.f));
+  document.getElementById('reasonsBody').innerHTML = REASONS.map(r => {
+    const pct = (r.f / total * 100).toFixed(1);
+    const w = Math.round(r.f / max * 158);
     return `<tr><td>${r.r}</td><td>${r.f.toLocaleString()}</td><td class="pct-num">${pct}%</td><td><div class="bar-bg"><div class="bar-fill" style="width:${w}px"></div></div></td></tr>`;
   }).join('');
 }
 
-/* ═══════════════════════════════════════
+/* =========================
    INTERACTIONS
-═══════════════════════════════════════ */
-function setQuarter(q,el){
-  S.quarter=q;
-  document.querySelectorAll('#qTabs .q-tab').forEach(t=>t.classList.remove('active'));
+========================= */
+function setQuarter(q, el){
+  S.quarter = q;
+  document.querySelectorAll('#qTabs .q-tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   renderQuarter(q);
 }
 
-document.getElementById('themeBtn').addEventListener('click',()=>{ setTheme(S.theme==='dark'?'light':'dark'); renderMacro(); renderFx(); });
-document.getElementById('refreshBtn').addEventListener('click',()=>refreshData());
+document.getElementById('themeBtn').addEventListener('click', () => {
+  setTheme(S.theme === 'dark' ? 'light' : 'dark');
+  renderMacro();
+  renderFxFromState();
+});
 
-document.getElementById('macroRanges').addEventListener('click',e=>{
-  const btn=e.target.closest('.range-btn'); if(!btn) return;
-  setGroup('macroRanges',btn);
-  S.macroRange = btn.dataset.range==='all'?'all':Number(btn.dataset.range);
+document.getElementById('refreshBtn').addEventListener('click', () => refreshData());
+
+document.getElementById('macroRanges').addEventListener('click', e => {
+  const btn = e.target.closest('.range-btn');
+  if (!btn) return;
+  setGroup('macroRanges', btn);
+  S.macroRange = btn.dataset.range === 'all' ? 'all' : Number(btn.dataset.range);
   renderMacro();
 });
 
-document.getElementById('fxRanges').addEventListener('click',e=>{
-  const btn=e.target.closest('.range-btn'); if(!btn) return;
-  setGroup('fxRanges',btn);
-  S.fxRange=Number(btn.dataset.fxrange);
-  renderFx();
+document.getElementById('fxRanges').addEventListener('click', e => {
+  const btn = e.target.closest('.range-btn');
+  if (!btn) return;
+  setGroup('fxRanges', btn);
+  S.fxRange = btn.dataset.fxrange === 'all' ? 'all' : Number(btn.dataset.fxrange);
+  renderFxFromState();
 });
 
-/* ═══════════════════════════════════════
-   BOOT + REFRESH
-═══════════════════════════════════════ */
+/* =========================
+   REFRESH
+========================= */
 async function refreshData(){
   setStatus('Refreshing live data…');
-  const [inf,gdp,unem,fx] = await Promise.all([
+  showLoadingState();
+
+  const [infRes, gdpRes, unemRes, fxHistRes, popRes, fxRes] = await Promise.allSettled([
     fetchWB('FP.CPI.TOTL.ZG'),
     fetchWB('NY.GDP.MKTP.KD.ZG'),
     fetchWB('SL.UEM.TOTL.ZS'),
-    fetchFx(),
+    fetchWB('PA.NUS.FCRF'),
+    fetchWB('SP.POP.TOTL'),
+    fetchFxCurrent()
   ]);
-  S.data.inf=inf; S.data.gdp=gdp; S.data.unem=unem; S.data.fx=fx;
+
+  let changed = false;
+
+  if (infRes.status === 'fulfilled' && infRes.value.length){
+    S.data.inf = infRes.value;
+    changed = true;
+  }
+  if (gdpRes.status === 'fulfilled' && gdpRes.value.length){
+    S.data.gdp = gdpRes.value;
+    changed = true;
+  }
+  if (unemRes.status === 'fulfilled' && unemRes.value.length){
+    S.data.unem = unemRes.value;
+    changed = true;
+  }
+  if (fxHistRes.status === 'fulfilled' && fxHistRes.value.length){
+    S.data.fx = fxHistRes.value;
+    changed = true;
+  }
+  if (popRes.status === 'fulfilled' && popRes.value.length){
+    S.data.pop = popRes.value;
+    changed = true;
+  }
+
+  if (fxRes.status === 'fulfilled' && fxRes.value && isFinite(fxRes.value.rate)){
+    appendFxPoint(fxRes.value.rate);
+    changed = true;
+  }
+
+  ensureFallbacks();
+  saveState();
+
   renderMacro();
-  await renderFx();
+  renderPop();
+  renderFxFromState();
+  renderQuarter(S.quarter);
+  renderTrend();
+  renderReasons();
+  updateSummaryLine();
+  updateTicker();
   setRefreshTime();
-  setStatus(inf.length||gdp.length ? 'Live data updated successfully.' : 'World Bank API unavailable — try refreshing or check your connection.');
+
+  setStatus(changed
+    ? 'Live data updated successfully.'
+    : 'Could not reach live sources. Showing cached or fallback readings. Will retry in 15 minutes.');
 }
 
+/* =========================
+   BOOT
+========================= */
 (function boot(){
+  loadState();
   setTheme(S.theme);
+  ensureFallbacks();
   renderQuarter(1);
   renderTrend();
   renderReasons();
+  renderMacro();
+  renderPop();
+  renderFxFromState();
+  updateTicker();
+  updateSummaryLine();
+  setRefreshTime();
   refreshData();
-  setInterval(()=>{ if(document.visibilityState==='visible') refreshData(); }, 15*60*1000);
+  setInterval(() => {
+    if (document.visibilityState === 'visible') refreshData();
+  }, AUTO_REFRESH_MS);
 })();
 </script>
 </body>
