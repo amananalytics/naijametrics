@@ -142,6 +142,13 @@ Keep changes simple and aligned with the core idea: clarity over complexity.
 
 ---
 
+Contributors & Acknowledgments
+
+- **Abdulrahman Sanni** ([@amananalytics](https://github.com/amananalytics)) — Core Developer
+- **Google Gemini / Antigravity** — AI Pair Programmer (Dashboard architecture, API integration, styling, and bug fixes)
+
+---
+
 License
 
 MIT License
